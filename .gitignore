@@ -1,0 +1,25 @@
+# Secrets
+.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Runs output (giữ .gitkeep, bỏ nội dung run)
+runs/*
+!runs/.gitkeep
+
+# Data
+data/*
+!data/.gitkeep
+
+# OS
+.DS_Store

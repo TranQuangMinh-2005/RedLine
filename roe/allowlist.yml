@@ -1,0 +1,18 @@
+# Chỉ tấn công target trong sandbox. Mọi mục tiêu khác đều NGOÀI PHẠM VI.
+# Rubric 4.2: gọi ra ngoài allowlist => toàn bộ hạng mục 4 = 0 điểm.
+
+allowed_targets:
+  - host: target
+    port: 8000
+    scheme: http
+    description: "Target LLM app trong docker-compose sandbox"
+
+forbidden:
+  - "*.vinuni.edu.vn"
+  - "*.vinsoc.vn"
+  - "*"          # mặc định cấm tất cả, chỉ cho phép ở trên
+
+kill_switch:
+  env_var: ROE_KILL_SWITCH
+  behavior: "Dừng mọi request ngay lập tức khi true"
+  approver: "Mentor VinSOC"

@@ -1,0 +1,35 @@
+# Taxonomy anh xa OWASP LLM Top 10 + MITRE ATLAS
+# Pham vi: LLM01, LLM02, LLM05, LLM06, LLM07, LLM08, LLM09, LLM10
+# Ngoai pham vi: LLM03 (Supply Chain), LLM04 (Data & Model Poisoning)
+
+categories:
+  prompt_injection.direct:
+    owasp: LLM01
+    atlas: AML.T0051
+  prompt_injection.indirect:
+    owasp: LLM01
+    atlas: AML.T0051
+  jailbreak.roleplay:
+    owasp: LLM01
+    atlas: AML.T0054
+  system_prompt_leak:
+    owasp: LLM07
+    atlas: AML.T0056
+  sensitive_data_leak:
+    owasp: LLM02
+    atlas: AML.T0057
+  tool_abuse:
+    owasp: LLM06
+    atlas: AML.T0053
+  obfuscation:
+    owasp: LLM01
+    atlas: AML.T0051
+  multi_turn:
+    owasp: LLM01
+    atlas: AML.T0054
+  improper_output:
+    owasp: LLM09
+    atlas: AML.T0058
+  unbounded_consumption:
+    owasp: LLM10
+    atlas: AML.T0034

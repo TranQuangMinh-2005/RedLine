@@ -1,0 +1,102 @@
+<mxfile host="app.diagrams.net" agent="RedLine-Codex-via-drawio-mcp">
+  <diagram id="redshop-single-agent" name="RedShop Target Architecture">
+    <mxGraphModel dx="2571" dy="2548" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=24;fontStyle=1;fontColor=#172033;" value="TARGET ARCHITECTURE" vertex="1">
+          <mxGeometry height="38" width="680" x="60" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="sandbox" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;dashed=1;dashPattern=8 5;fillColor=#F8FAFC;strokeColor=#94A3B8;strokeWidth=2;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#475569;verticalAlign=top;align=left;spacingTop=14;spacingLeft=18;container=0;pointerEvents=0;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;TARGET APP  /  DOCKER COMPOSE SANDBOX&lt;/font&gt;" vertex="1">
+          <mxGeometry height="770" width="1210" x="300" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="groq" parent="1" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#FDF2F8;strokeColor=#DB2777;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fontColor=#831843;align=center;verticalAlign=middle;spacing=8;" value="&lt;b&gt;Groq LLM API&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;qwen/qwen3.8-27b  •  temperature 0.0&lt;/font&gt;" vertex="1">
+          <mxGeometry height="110" width="290" x="775" as="geometry" />
+        </mxCell>
+        <mxCell id="user" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=16;fillColor=#EFF6FF;strokeColor=#2563EB;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fontColor=#1E3A8A;align=left;verticalAlign=middle;spacingLeft=55;" value="&lt;b&gt;Khách hàng&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Web / App / API client&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="190" x="50" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="api" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#FFFFFF;strokeColor=#2563EB;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fontColor=#172033;align=left;verticalAlign=middle;spacingLeft=58;" value="&lt;b&gt;FastAPI&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;POST /chat  •  GET /health&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="240" x="400" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="agent" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#FFFBEB;strokeColor=#F59E0B;strokeWidth=3;fontFamily=Helvetica;fontSize=13;fontColor=#172033;align=left;verticalAlign=middle;spacingLeft=68;" value="&lt;b&gt;RedShopAssistant&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#92400e&quot;&gt;LLM&lt;/font&gt;&lt;br&gt;&lt;font color=&quot;#475569&quot;&gt;Prompt + canary • chọn RAG/tool • trả lời&lt;/font&gt;" vertex="1">
+          <mxGeometry height="140" width="290" x="775" y="455" as="geometry" />
+        </mxCell>
+        <mxCell id="session" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#F5F3FF;strokeColor=#7C3AED;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fontColor=#3B217A;align=left;verticalAlign=middle;spacingLeft=55;" value="&lt;b&gt;Session Store&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;session_id + lịch sử multi-turn&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="240" x="400" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="logging" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#F1F5F9;strokeColor=#64748B;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fontColor=#334155;align=left;verticalAlign=middle;spacingLeft=55;" value="&lt;b&gt;Logging&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;input • tool call • response • redact&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="290" x="775" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="icon_user" parent="1" style="shape=actor;whiteSpace=wrap;html=1;strokeColor=#2563EB;strokeWidth=2;fillColor=none;" value="" vertex="1">
+          <mxGeometry height="48" width="32" x="70" y="501" as="geometry" />
+        </mxCell>
+        <mxCell id="icon_api" parent="1" style="shape=image;html=1;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/infrastructure/1/Application_Server.svg;" value="" vertex="1">
+          <mxGeometry height="46" width="40" x="416" y="502" as="geometry" />
+        </mxCell>
+        <mxCell id="icon_agent" parent="1" style="shape=image;html=1;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/font-awesome/1/Robot.svg;" value="" vertex="1">
+          <mxGeometry height="36" width="44" x="791" y="502" as="geometry" />
+        </mxCell>
+        <mxCell id="icon_session" parent="1" style="html=1;strokeWidth=2;strokeColor=#7C3AED;shape=mxgraph.ios7.icons.chat;" value="" vertex="1">
+          <mxGeometry height="20" width="32" x="420" y="765" as="geometry" />
+        </mxCell>
+        <mxCell id="icon_log" parent="1" style="shape=image;html=1;imageAspect=0;aspect=fixed;image=https://icons.diagrams.net/assets/generic/1/Log.svg;" value="" vertex="1">
+          <mxGeometry height="38" width="32" x="797" y="756" as="geometry" />
+        </mxCell>
+        <mxCell id="e_user_api" edge="1" parent="1" source="user" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;strokeColor=#2563EB;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontColor=#1E40AF;labelBackgroundColor=#FFFFFF;" target="api" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;chat&lt;/font&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_api_agent" edge="1" parent="1" source="api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;strokeColor=#F59E0B;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontColor=#92400E;labelBackgroundColor=#FFFFFF;" target="agent" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;message + history&lt;/font&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_agent_groq" edge="1" parent="1" source="agent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;strokeColor=#DB2777;strokeWidth=2;fontFamily=Helvetica;fontSize=12;fontColor=#9D174D;labelBackgroundColor=#FFFFFF;" target="groq" value="prompt / completion">
+          <mxGeometry relative="1" x="-0.0007" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_api_session" edge="1" parent="1" source="api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;dashed=1;strokeColor=#7C3AED;strokeWidth=1.5;fontFamily=Helvetica;fontSize=10;fontColor=#5B21B6;labelBackgroundColor=#FFFFFF;" target="session" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;read / write&lt;/font&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_agent_rag" edge="1" parent="1" source="agent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;strokeColor=#059669;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontColor=#047857;labelBackgroundColor=#FFFFFF;" target="rag" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;retrieve&lt;/font&gt;">
+          <mxGeometry relative="1" x="0.7655" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_agent_tools" edge="1" parent="1" source="agent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;strokeColor=#EA580C;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontColor=#C2410C;labelBackgroundColor=#FFFFFF;" target="tools" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;tool call&lt;/font&gt;">
+          <mxGeometry relative="1" x="0.7109" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_agent_log" edge="1" parent="1" source="agent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;endFill=1;dashed=1;strokeColor=#64748B;strokeWidth=1.5;fontFamily=Helvetica;fontSize=10;fontColor=#475569;labelBackgroundColor=#FFFFFF;" target="logging" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;audit&lt;/font&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="-OygEiT30UwN_UB8e0FC-1" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="102.85714285714285" width="250" x="1150" y="339.9971428571429" as="geometry" />
+        </mxCell>
+        <mxCell id="rag" parent="-OygEiT30UwN_UB8e0FC-1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#ECFDF5;strokeColor=#059669;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fontColor=#065F46;align=left;verticalAlign=middle;spacingLeft=54;" value="&lt;b&gt;RAG Service&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;embed + retrieve context&lt;/font&gt;" vertex="1">
+          <mxGeometry height="102.85714285714285" width="250" as="geometry" />
+        </mxCell>
+        <mxCell id="icon_rag" parent="-OygEiT30UwN_UB8e0FC-1" style="html=1;strokeWidth=2;strokeColor=#059669;shape=mxgraph.ios7.icons.looking_glass;" value="" vertex="1">
+          <mxGeometry height="36.57142857142857" width="32" x="20" y="33.14285714285714" as="geometry" />
+        </mxCell>
+        <mxCell id="vector" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=14;fillColor=#D1FAE5;strokeColor=#059669;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fontColor=#065F46;align=center;verticalAlign=middle;spacingTop=7;" value="&lt;b&gt;Knowledge Base&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;Vector DB • FAQ / sản phẩm&lt;/font&gt;" vertex="1">
+          <mxGeometry height="100" width="250" x="1150" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rag_vector" edge="1" parent="1" source="rag" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;strokeColor=#059669;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontColor=#047857;labelBackgroundColor=#FFFFFF;" target="vector" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;search&lt;/font&gt;">
+          <mxGeometry relative="1" x="-0.0095" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="customerdb" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=14;fillColor=#FFEDD5;strokeColor=#EA580C;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fontColor=#9A3412;align=center;verticalAlign=middle;spacingTop=7;" value="&lt;b&gt;Customer DB&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;PII mock • đơn hàng • ticket&lt;/font&gt;" vertex="1">
+          <mxGeometry height="100" width="250" x="1150" y="745" as="geometry" />
+        </mxCell>
+        <mxCell id="tools" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=12;fillColor=#FFF7ED;strokeColor=#EA580C;strokeWidth=2;fontFamily=Helvetica;fontSize=13;fontColor=#9A3412;align=center;verticalAlign=middle;spacing=8;" value="&lt;b&gt;Customer Tools&lt;/b&gt;&lt;br&gt;&lt;font color=&quot;#64748B&quot;&gt;lookup customer/ticket • create ticket&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="250" x="1150" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="e_tools_db" edge="1" parent="1" source="tools" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;startArrow=block;startFill=1;endArrow=block;endFill=1;strokeColor=#EA580C;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontColor=#C2410C;labelBackgroundColor=#FFFFFF;" target="customerdb" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;query / update&lt;/font&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

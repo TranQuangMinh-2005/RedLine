@@ -1,0 +1,25 @@
+# === TARGET APP ===
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-dotenv
+PyYAML
+
+# === RAG ===
+chromadb            # hoặc qdrant-client — chọn 1
+sentence-transformers
+
+# === LLM ===
+openai              # hoặc google-generativeai / anthropic
+
+# === DB ===
+sqlalchemy
+psycopg2-binary     # hoặc dùng sqlite cho đơn giản
+
+# === DEV ===
+pytest
+pytest-asyncio
+httpx
+ruff
+mypy

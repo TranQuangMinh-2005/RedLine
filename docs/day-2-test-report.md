@@ -7,21 +7,21 @@ Tester boundary: `tests/**` and this report; no implementation files were change
 
 ## Result
 
-The behavioral acceptance suite has been written, but it has **not been executed** in this workspace because no usable Python, pytest, or Docker runtime is installed. Day 2 therefore remains runtime-unverified; static inspection alone is not a pass decision.
+The automated acceptance suite passes in the uv-managed Python environment: **78 passed in 1.19s**. All LLM behavior is mocked, so the suite consumes no API quota.
 
 ## Coverage added
 
 | Requirement | Automated coverage | Static status |
 |---|---|---|
-| 2.1 Chat API | health, request/response contract, validation, generated session ID, provider 502 sanitization, kill switch, model override ignored, session limit | Implemented; unexecuted |
-| 2.2 Multi-turn | turn ordering, turn-2 history, session isolation, defensive copies, clear, limit, concurrent append | Implemented; unexecuted |
-| 2.3 RAG | ranked retrieval, provenance, empty result, top-k, missing index, deterministic output | Implemented; unexecuted |
-| 2.4 Ingestion | manifest/index, duplicate ID, required corpus metadata, minimum corpus coverage | Implemented; unexecuted |
-| 2.5 Customer DB | schema/seed, 10+ customers, 20+ orders, 12+ tickets, status diversity, mock PII, idempotency, foreign keys, rollback | Implemented; unexecuted |
-| 2.6 Read tools | success/not-found/input boundaries, bounded output, RAG provenance, allowlist and schema/registry sync | Implemented; unexecuted |
-| 2.7 Side effect | persistent DB count delta, record read-back, validation/no-write, unknown customer/no-write, idempotency | Implemented; unexecuted |
-| 2.8 Logging | recursive redaction, parseable JSON, correlation fields/context, LLM/tool/retrieval event sequence and failure event | Implemented; unexecuted |
-| 2.9 README | Commands and documentation updated by the coordinator; clean-machine walkthrough not possible without Docker | Static review only |
+| 2.1 Chat API | health, request/response contract, validation, generated session ID, provider 502 sanitization, kill switch, model override ignored, session limit | Passed |
+| 2.2 Multi-turn | turn ordering, turn-2 history, session isolation, defensive copies, clear, limit, concurrent append | Passed |
+| 2.3 RAG | ranked retrieval, provenance, empty result, top-k, missing index, deterministic output | Passed |
+| 2.4 Ingestion | manifest/index, duplicate ID, required corpus metadata, minimum corpus coverage | Passed |
+| 2.5 Customer DB | schema/seed, 10+ customers, 20+ orders, 12+ tickets, status diversity, mock PII, idempotency, foreign keys, rollback | Passed |
+| 2.6 Read tools | success/not-found/input boundaries, bounded output, RAG provenance, allowlist and schema/registry sync | Passed |
+| 2.7 Side effect | persistent DB count delta, record read-back, validation/no-write, unknown customer/no-write, idempotency | Passed |
+| 2.8 Logging | recursive redaction, parseable JSON, correlation fields/context, LLM/tool/retrieval event sequence and failure event | Passed |
+| 2.9 README | uv commands and dependency-lock workflow documented; clean-machine Docker walkthrough remains pending | Automated suite passed |
 
 Test files:
 
@@ -48,39 +48,35 @@ All LLM behavior in the new tests is mocked. The suite must not consume API quot
 - No `TODO: W1 task 2.1-2.8` marker remains under `src/`.
 - `git diff --check` reports no whitespace errors (only Windows LF-to-CRLF notices).
 
-## Runtime blockers
+## Runtime evidence and remaining blockers
 
-Commands attempted:
+Automated test command:
 
 ```text
-pytest -q
-python -m pytest -q
-where.exe python
-where.exe py
-where.exe docker
+uv run --locked pytest -q
 ```
 
-Observed environment:
+Result: `78 passed in 1.19s`.
 
-- `pytest` is not on PATH.
-- `python.exe` resolves only to the Microsoft Store application alias and cannot execute Python.
-- `py` is absent.
+`uv` manages the project interpreter and environment, so a separately installed Python and `pip` are not required. The uv-managed virtual environment intentionally does not need to expose `pip`.
+
+Observed remaining limitation:
+
 - `docker` is absent.
 
-Consequently, the following evidence is still mandatory before marking Day 2 done:
+Consequently, the following Docker/manual evidence is still pending:
 
-1. A clean `python -m pytest -q` run with all tests passing.
-2. `docker compose config`, build, startup, and health-check evidence.
-3. A Docker E2E run showing RAG retrieval, customer/ticket reads, and `create_ticket` persisting one new ticket.
-4. A two-turn `/chat` request plus a second isolated session.
-5. JSON log evidence for one complete request, verified not to contain API key, canary, email, phone, or address.
-6. A clean-machine README walkthrough by another team member.
+1. `docker compose config`, build, startup, and health-check evidence.
+2. A Docker E2E run showing RAG retrieval, customer/ticket reads, and `create_ticket` persisting one new ticket.
+3. A two-turn `/chat` request plus a second isolated session.
+4. JSON log evidence for one complete request, verified not to contain API key, canary, email, phone, or address.
+5. A clean-machine README walkthrough by another team member.
 
 ## Commands to run in a prepared environment
 
 ```powershell
-python -m pip install -r requirements.txt
-python -m pytest -q
+uv sync --locked
+uv run --locked pytest -q
 docker compose config
 docker compose build
 docker compose up -d

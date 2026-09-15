@@ -1,19 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from sqlalchemy import func, select
 
 from src.agents.tools.customer_tools import create_ticket, get_ticket
-from src.ingestion.seed_data import seed_database
-from src.models.db import Ticket, configure_database, session_scope
-
-
-@pytest.fixture()
-def seeded_database(tmp_path: Path) -> None:
-    configure_database(f"sqlite:///{(tmp_path / 'side-effect-test.db').as_posix()}")
-    seed_database()
+from src.models.db import Ticket, session_scope
 
 
 def _ticket_count() -> int:

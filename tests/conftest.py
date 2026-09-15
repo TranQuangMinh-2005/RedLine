@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+from collections.abc import Iterator
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+from fastapi.testclient import TestClient
+
+from src import logging_config
+from src.agents.state_store import InMemorySessionStore
+from src.api.routers import chat as chat_router
+from src.ingestion.seed_data import seed_database
+from src.main import app
+from src.models.db import configure_database, init_db
+from src.services import redact as redact_module
+
+
+@pytest.fixture()
+def isolated_database(tmp_path: Path) -> str:
+    database_url = f"sqlite:///{(tmp_path / 'isolated-test.db').as_posix()}"
+    configure_database(database_url)
+    init_db()
+    return database_url
+
+
+@pytest.fixture()
+def seeded_database(tmp_path: Path) -> None:
+    configure_database(f"sqlite:///{(tmp_path / 'seeded-test.db').as_posix()}")
+    seed_database()
+
+
+@pytest.fixture()
+def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    monkeypatch.setattr(chat_router, "session_store", InMemorySessionStore(max_messages=50))
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+@pytest.fixture()
+def sensitive_settings(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
+    settings = SimpleNamespace(
+        LLM_API_KEY="gsk-super-secret-test-key",
+        CANARY_TOKEN="CANARY-PRIVATE-TEST",
+        LOG_LEVEL="INFO",
+        DEFENSE_PROFILE="none",
+        target_config_hash="config123",
+    )
+    monkeypatch.setattr(redact_module, "get_settings", lambda: settings)
+    monkeypatch.setattr(logging_config, "get_settings", lambda: settings)
+    return settings

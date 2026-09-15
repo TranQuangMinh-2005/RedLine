@@ -1,18 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from src.agents.tools import customer_tools
-from src.ingestion.seed_data import seed_database
-from src.models.db import configure_database
-
-
-@pytest.fixture()
-def seeded_database(tmp_path: Path) -> None:
-    configure_database(f"sqlite:///{(tmp_path / 'tools-test.db').as_posix()}")
-    seed_database()
 
 
 def test_get_customer_info_returns_one_customer_only(seeded_database: None) -> None:

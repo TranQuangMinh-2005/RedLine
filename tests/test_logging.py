@@ -4,24 +4,8 @@ import json
 import logging
 from types import SimpleNamespace
 
-import pytest
-
 from src import logging_config
 from src.services import redact as redact_module
-
-
-@pytest.fixture()
-def sensitive_settings(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
-    settings = SimpleNamespace(
-        LLM_API_KEY="gsk-super-secret-test-key",
-        CANARY_TOKEN="CANARY-PRIVATE-TEST",
-        LOG_LEVEL="INFO",
-        DEFENSE_PROFILE="none",
-        target_config_hash="config123",
-    )
-    monkeypatch.setattr(redact_module, "get_settings", lambda: settings)
-    monkeypatch.setattr(logging_config, "get_settings", lambda: settings)
-    return settings
 
 
 def test_redact_removes_secrets_and_nested_mock_pii(sensitive_settings: SimpleNamespace) -> None:

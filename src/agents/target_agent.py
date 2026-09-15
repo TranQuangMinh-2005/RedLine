@@ -152,10 +152,17 @@ def respond(
                 "result_status": tool_result.get("status"),
             }
             if name == "search_knowledge":
-                rows = tool_result.get("data") or []
+                data = tool_result.get("data")
+                rows = data if isinstance(data, list) else []
                 event_fields.update(
                     result_count=len(rows),
-                    document_ids=sorted({row.get("document_id") for row in rows if row.get("document_id")}),
+                    document_ids=sorted(
+                        {
+                            row.get("document_id")
+                            for row in rows
+                            if isinstance(row, dict) and row.get("document_id")
+                        }
+                    ),
                 )
                 current_audit_event("retrieval_completed", **event_fields)
             elif name == "create_ticket" and tool_result.get("data"):

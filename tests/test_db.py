@@ -1,21 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from src.ingestion.seed_data import CUSTOMERS, ORDERS, TICKETS, seed_database
-from src.models.db import Customer, Order, Ticket, configure_database, init_db, session_scope
-
-
-@pytest.fixture()
-def isolated_database(tmp_path: Path) -> str:
-    database_url = f"sqlite:///{(tmp_path / 'day2-test.db').as_posix()}"
-    configure_database(database_url)
-    init_db()
-    return database_url
+from src.models.db import Customer, Order, Ticket, session_scope
 
 
 def _count(model: type[Customer] | type[Order] | type[Ticket]) -> int:

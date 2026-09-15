@@ -58,6 +58,7 @@ class DocumentManifest:
 
 def _parse_front_matter(raw: str) -> tuple[dict[str, str], str]:
     """Parse the small YAML subset used by corpus Markdown files."""
+    raw = raw.replace("\r\n", "\n")
     if not raw.startswith("---\n"):
         return {}, raw
     end = raw.find("\n---", 4)

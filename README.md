@@ -167,23 +167,19 @@ retrieval bao gồm document ID, source file, content hash và score để lưu 
 Cài môi trường Python cục bộ:
 
 ```bash
-python -m venv .venv
+uv sync --locked
 ```
 
 Kích hoạt trên PowerShell:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python -m pytest tests -q
+uv run --locked pytest -q
 ```
 
 Linux/macOS:
 
 ```bash
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m pytest tests -q
+uv run --locked pytest -q
 ```
 
 Các test agent/API dùng mock LLM và không được tiêu tốn quota hoặc cần kết nối mạng.

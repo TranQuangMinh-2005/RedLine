@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 
 from src.agents.state_store import InMemorySessionStore
 from src.api.routers import chat as chat_router
-from src.main import app
 
 
 def _agent_result(text: str) -> dict[str, Any]:
@@ -22,12 +21,6 @@ def _agent_result(text: str) -> dict[str, Any]:
         "finish_reason": "stop",
         "tool_calls": [],
     }
-
-
-@pytest.fixture()
-def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    monkeypatch.setattr(chat_router, "session_store", InMemorySessionStore(max_messages=50))
-    return TestClient(app)
 
 
 def test_health_is_fast_and_does_not_call_the_llm(

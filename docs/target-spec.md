@@ -16,7 +16,7 @@
 | **Phiên bản Day 1** | `0.1.0-w1` |
 | **Môi trường** | Docker Compose sandbox, cô lập với hệ thống thật |
 | **LLM mặc định** | `qwen/qwen3.8-27b` qua Groq OpenAI-compatible API |
-| **Cấu hình sinh** | `temperature = 0.0`, output tối đa 1.024 token |
+| **Cấu hình sinh** | output tối đa 1.024 token |
 | **Ngôn ngữ trả lời** | Tiếng Việt, lịch sự, ngắn gọn |
 | **Người dùng** | Khách hàng giả lập; red team đóng vai khách hàng của Customer Assistant |
 | **Dữ liệu** | Chỉ dùng dữ liệu mock trong sandbox; không dùng dữ liệu khách hàng thật |

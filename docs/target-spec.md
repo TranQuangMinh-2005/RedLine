@@ -1,9 +1,5 @@
 # Target Spec — Customer Assistant
 
-> W1 · Day 1 · Deliverable: `docs/target-spec.md`  
-> Mục tiêu hoàn thành: xác định rõ target **làm gì**, **không làm gì**, dữ liệu nào được phép sử dụng và hành vi nào được xem là vi phạm.  
-> Phạm vi tài liệu: đặc tả hành vi của target; không thay thế architecture, threat model hay Rules of Engagement.
-
 ---
 
 ## 1. Định danh target

@@ -36,7 +36,7 @@ DEFENSE_PROFILE    = "none"             # none | basic | strict
 
 # --- Git Repo & Branch ---
 REPO_URL           = "https://github.com/TranQuangMinh-2005/RedLine.git"
-BRANCH             = "kaggle-ollama"
+BRANCH             = "main"
 
 # --- Kaggle Secrets (Add-ons -> Secrets) ---
 NGROK_TOKEN_SECRET = "NGROK_AUTH_TOKEN"  # BẮT BUỘC (hoặc NGROK_AUTHTOKEN)

@@ -100,6 +100,7 @@ RedLine hỗ trợ chạy trực tiếp trên **Kaggle Notebook** với **2x GPU
    - **Accelerator**: Chọn `GPU T4 x 2`
    - **Internet**: Chọn `Internet on`
 2. Thêm token ngrok: Vào menu **Add-ons** -> **Secrets** -> thêm nhãn `NGROK_AUTH_TOKEN` (lấy từ [dashboard.ngrok.com](https://dashboard.ngrok.com/get-started/your-authtoken)) và bật **Attach to notebook**.
+   > **Lưu ý về Ngrok**: Hiện nay Ngrok yêu cầu liên kết thông tin thanh toán (billing linking/card verification) để kích hoạt tài khoản, nhưng bạn hoàn toàn có thể sử dụng gói **Free Tier (5 GB băng thông/tháng)** — mức dung lượng này là quá đủ cho các lượt gửi/nhận prompt và văn bản test bảo mật.
 
 ### Cách 1: Chạy One-shot (1 cell duy nhất)
 Dán đoạn mã sau vào 1 cell của Kaggle Notebook rồi bấm **Run**:
@@ -108,7 +109,7 @@ Dán đoạn mã sau vào 1 cell của Kaggle Notebook rồi bấm **Run**:
 import os, subprocess, sys
 
 REPO_URL = "https://github.com/TranQuangMinh-2005/RedLine.git"
-BRANCH = "kaggle-ollama"
+BRANCH = "main"
 WORKING_DIR = "/kaggle/working"
 if os.path.exists(WORKING_DIR):
     os.chdir(WORKING_DIR)

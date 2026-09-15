@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import threading
 
-from guardrails.profiles import VALID_PROFILE_NAMES, DefenseProfile, get_defense_profile
+from src.guardrails.profiles import VALID_PROFILE_NAMES, DefenseProfile, get_defense_profile
 from src.config import get_settings
 
 _lock = threading.Lock()

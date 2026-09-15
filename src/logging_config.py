@@ -42,7 +42,7 @@ def audit_event(event: str, *, request_id: str, session_id: str | None = None, *
     # Đọc profile từ runtime state (có thể đổi qua API) thay vì .env tĩnh,
     # nếu không log sẽ ghi sai mode khi guardrail được chuyển giữa các run.
     try:
-        from src.services import defense_state
+        from src.guardrails import state as defense_state
 
         active_profile = defense_state.get_active_name()
     except Exception:  # noqa: BLE001 — logging không được làm sập request

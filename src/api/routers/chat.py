@@ -7,14 +7,14 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 
-from guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_input
-from guardrails.output_filter import inspect_output
+from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_input
+from src.guardrails.output_filter import inspect_output
 from src.agent import target_agent
 from src.agent.session import InMemorySessionStore, SessionLimitError
 from src.config import get_settings
 from src.logging_config import audit_event, reset_request_context, set_request_context
 from src.api.schemas import ChatRequest, ChatResponse
-from src.services import defense_state
+from src.guardrails import state as defense_state
 
 router = APIRouter()
 session_store = InMemorySessionStore(max_messages=50)

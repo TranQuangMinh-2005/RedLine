@@ -1,6 +1,6 @@
 import pytest
 
-from guardrails.profiles import get_defense_profile
+from src.guardrails.profiles import get_defense_profile
 
 
 @pytest.mark.parametrize(

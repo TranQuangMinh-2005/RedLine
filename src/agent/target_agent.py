@@ -15,7 +15,7 @@ import json
 import re
 from typing import Any
 
-from guardrails.profiles import DefenseProfile, get_defense_profile
+from src.guardrails.profiles import DefenseProfile, get_defense_profile
 from src.agent.tools.customer_tools import TOOL_DEFINITIONS, execute_tool
 from src.config import get_settings
 from src.logging_config import current_audit_event

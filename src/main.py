@@ -16,6 +16,7 @@ from fastapi import FastAPI
 
 from guardrails.profiles import get_defense_profile
 from src.api.routers.chat import router as chat_router
+from src.api.routers.openai_compat import router as openai_router
 from src.config import get_settings
 from src.logging_config import configure_logging
 
@@ -40,4 +41,5 @@ def health() -> dict:
 
 
 app.include_router(chat_router)
+app.include_router(openai_router)
 configure_logging()

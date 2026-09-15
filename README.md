@@ -128,8 +128,26 @@ subprocess.run([sys.executable, "kaggle_redline.py"], check=True)
 Bạn có thể mở hoặc upload file notebook có sẵn: [`notebooks/kaggle_redline.ipynb`](notebooks/kaggle_redline.ipynb).
 
 ### Kiểm thử API từ bên ngoài:
-Sau khi khởi động, ngrok sẽ in ra đường link Public API (dạng `https://xxxx.ngrok-free.app`). Gọi API từ máy cá nhân hoặc Postman/curl:
+Sau khi khởi động, ngrok sẽ in ra đường link Public API (dạng `https://xxxx.ngrok-free.app`). Bạn có thể gọi API theo 2 chuẩn:
 
+#### Chuẩn 1: OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`, `/`)
+Dùng trực tiếp với thư viện OpenAI (`OpenAI(base_url="https://xxxx.ngrok-free.app/v1")`), LangChain, LlamaIndex, Chatbot UI, hoặc curl:
+
+```bash
+# 1. Danh sách models
+curl -H "ngrok-skip-browser-warning: true" https://xxxx.ngrok-free.app/v1/models
+
+# 2. Chat Completions (Agent tự động kích hoạt RAG và Tool tra cứu)
+curl -X POST https://xxxx.ngrok-free.app/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "ngrok-skip-browser-warning: true" \
+  -d '{
+    "model": "qwen2.5:14b",
+    "messages": [{"role": "user", "content": "Chính sách đổi trả như thế nào?"}]
+  }'
+```
+
+#### Chuẩn 2: Native Target API (`/chat`, `/health`)
 ```bash
 # 1. Healthcheck
 curl -H "ngrok-skip-browser-warning: true" https://xxxx.ngrok-free.app/health

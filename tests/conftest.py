@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src import logging_config
-from src.agent.session import InMemorySessionStore
+from src.agents.session import InMemorySessionStore
 from src.api.routers import chat as chat_router
 from src.db.seed_data import seed_database
 from src.main import app

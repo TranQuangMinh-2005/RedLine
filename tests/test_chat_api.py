@@ -6,7 +6,7 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
-from src.agent.session import InMemorySessionStore
+from src.agents.session import InMemorySessionStore
 from src.api.routers import chat as chat_router
 
 

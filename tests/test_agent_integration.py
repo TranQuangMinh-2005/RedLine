@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from src.agent import target_agent
+from src.agents import target_agent
 
 
 def _llm_result(*, text: str = "", tool_calls: list[dict[str, Any]] | None = None) -> dict[str, Any]:

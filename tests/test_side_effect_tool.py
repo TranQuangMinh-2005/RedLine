@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import func, select
 
-from src.agent.tools.customer_tools import create_ticket, get_ticket
+from src.agents.tools.customer_tools import create_ticket, get_ticket
 from src.db.models import Ticket, session_scope
 
 

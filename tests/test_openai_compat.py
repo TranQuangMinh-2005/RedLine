@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from src.agent import target_agent
+from src.agents import target_agent
 
 
 def _mock_llm_result(text: str) -> dict[str, Any]:

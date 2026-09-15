@@ -9,8 +9,8 @@ from fastapi import APIRouter, HTTPException
 
 from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_input
 from src.guardrails.output_filter import inspect_output
-from src.agent import target_agent
-from src.agent.session import InMemorySessionStore, SessionLimitError
+from src.agents import target_agent
+from src.agents.session import InMemorySessionStore, SessionLimitError
 from src.config import get_settings
 from src.logging_config import audit_event, reset_request_context, set_request_context
 from src.api.schemas import ChatRequest, ChatResponse

@@ -197,3 +197,83 @@ def retrieve(query: str, *, top_k: int = 3, corpus_dir: Path | str = CORPUS_DIR)
             scored.append((float(score), chunk))
     scored.sort(key=lambda item: (-item[0], item[1]["document_id"], item[1]["chunk_index"]))
     return [{**chunk, "score": score} for score, chunk in scored[:top_k]]
+
+
+def add_document(
+    *,
+    doc_id: str,
+    title: str,
+    content: str,
+    category: str = "faq",
+    language: str = "vi",
+    source_note: str = "",
+    corpus_dir: Path | str = CORPUS_DIR,
+) -> DocumentManifest:
+    """Thêm (hoặc thay) một tài liệu Markdown vào corpus rồi re-ingest.
+
+    Có hiệu lực ngay cho retrieval vì ingest ghi đè index.json mà
+    retrieve() đọc lại mỗi request (không cache).
+
+    Raises:
+        ValueError: nếu doc_id/title rỗng hoặc doc_id chứa ký tự không an toàn.
+    """
+    doc_id = (doc_id or "").strip()
+    title = (title or "").strip()
+    if not doc_id:
+        raise ValueError("doc_id is required")
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", doc_id):
+        raise ValueError("doc_id chỉ được chứa chữ, số, dấu gạch ngang, gạch dưới và dấu chấm")
+    if not title:
+        raise ValueError("title is required")
+    if content is None:
+        raise ValueError("content is required")
+
+    corpus_dir = Path(corpus_dir)
+    corpus_dir.mkdir(parents=True, exist_ok=True)
+
+    # Front matter nhỏ gọn + nội dung thô
+    front = f"---\ndoc_id: {doc_id}\ntitle: \"{title}\"\ncategory: {category}\nlanguage: {language}\n"
+    if source_note:
+        front += f"source_note: \"{source_note}\"\n"
+    front += "---\n\n"
+    path = corpus_dir / f"{doc_id}.md"
+    path.write_text(front + content.lstrip("\n"), encoding="utf-8")
+
+    # Re-ingest toàn bộ corpus (sinh manifest + index mới)
+    manifests = ingest_corpus(corpus_dir)
+    for manifest in manifests:
+        if manifest.document_id == doc_id:
+            return manifest
+    raise RuntimeError(f"document {doc_id} was not present after re-ingest")
+
+
+def remove_document(doc_id: str, *, corpus_dir: Path | str = CORPUS_DIR) -> bool:
+    """Xoá tài liệu khỏi corpus (nếu tồn tại) rồi re-ingest.
+
+    Returns:
+        True nếu file đã bị xoá, False nếu không có tài liệu nào như vậy.
+    """
+    doc_id = (doc_id or "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", doc_id):
+        raise ValueError("doc_id chỉ được chứa chữ, số, dấu gạch ngang, gạch dưới và dấu chấm")
+
+    corpus_dir = Path(corpus_dir)
+    path = corpus_dir / f"{doc_id}.md"
+    if not path.exists():
+        return False
+    path.unlink()
+    ingest_corpus(corpus_dir)
+    return True
+
+
+def list_documents(*, corpus_dir: Path | str = CORPUS_DIR) -> list[DocumentManifest]:
+    """Danh sách tài liệu đã ingest (đọc từ manifest.jsonl)."""
+    corpus_dir = Path(corpus_dir)
+    manifest_path = corpus_dir / MANIFEST_NAME
+    if not manifest_path.exists():
+        return []
+    manifests: list[DocumentManifest] = []
+    for line in manifest_path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            manifests.append(DocumentManifest(**json.loads(line)))
+    return manifests

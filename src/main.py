@@ -18,6 +18,7 @@ from fastapi import FastAPI
 from src.api.routers.chat import router as chat_router
 from src.api.routers.config import router as config_router
 from src.api.routers.openai_compat import router as openai_router
+from src.api.routers.rag import router as rag_router
 from src.config import get_settings
 from src.logging_config import configure_logging
 from src.guardrails import state as defense_state
@@ -50,4 +51,5 @@ def health() -> dict:
 app.include_router(chat_router)
 app.include_router(config_router)
 app.include_router(openai_router)
+app.include_router(rag_router)
 configure_logging()

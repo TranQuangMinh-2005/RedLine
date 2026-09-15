@@ -154,9 +154,15 @@ sh(f"{sys.executable} -m pip install -q -e . pyngrok")
 if LLM_BACKEND == "ollama":
     require_free_space("/kaggle/temp" if os.path.exists("/kaggle") else ".", 15)
 
+    # Đảm bảo /usr/local/bin nằm trong PATH
+    if "/usr/local/bin" not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = f"/usr/local/bin:{os.environ.get('PATH', '')}"
+
     # Cài Ollama nếu chưa có
     if not shutil.which("ollama"):
-        print(">>> Cài đặt Ollama Linux...", flush=True)
+        print(">>> Cài đặt zstd và Ollama Linux...", flush=True)
+        # zstd bắt buộc để giải nén bộ cài Ollama mới nhất
+        sh("which zstd >/dev/null 2>&1 || (apt-get update -qq && apt-get install -y -qq zstd) || (sudo apt-get update -qq && sudo apt-get install -y -qq zstd)", check=False)
         sh("curl -fsSL https://ollama.com/install.sh | sh")
 
     # Khởi động Ollama daemon trong background

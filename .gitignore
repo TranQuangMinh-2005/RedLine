@@ -17,9 +17,18 @@ venv/
 runs/*
 !runs/.gitkeep
 
-# Data
+# Data: track approved RAG source documents, ignore generated/runtime artifacts.
 data/*
 !data/.gitkeep
+!data/rag/
+data/rag/*
+!data/rag/documents/
+!data/rag/documents/*.md
+data/rag/manifest.jsonl
+data/rag/index.json
+data/rag/documents/manifest.jsonl
+data/rag/documents/index.json
+data/*.db
 
 # OS
 .DS_Store

@@ -1,6 +1,6 @@
 """Deterministic local RAG ingestion and retrieval for the sandbox target.
 
-Source documents remain human-readable Markdown in ``data/rag``. Ingestion
+Source documents remain human-readable Markdown in ``data/rag/documents``. Ingestion
 creates a document-level provenance manifest and a local JSON chunk index. This
 dependency-free lexical retriever is deliberately deterministic so ingestion and
 tests do not depend on a remote embedding model; a vector-store adapter can
@@ -21,7 +21,7 @@ from typing import Any
 from src.config import get_settings
 
 
-CORPUS_DIR = Path("data/rag")
+CORPUS_DIR = Path("data/rag/documents")
 MANIFEST_NAME = "manifest.jsonl"
 INDEX_NAME = "index.json"
 
@@ -51,6 +51,9 @@ class DocumentManifest:
     title: str = ""
     source_url: str = ""
     language: str = "vi"
+    source_note: str = ""
+    reference_url: str = ""
+    accessed_at: str = ""
 
 
 def _parse_front_matter(raw: str) -> tuple[dict[str, str], str]:
@@ -122,12 +125,16 @@ def ingest_corpus(
     for path in _iter_source_files(corpus_dir):
         raw_bytes = path.read_bytes()
         metadata, content = _parse_front_matter(raw_bytes.decode("utf-8"))
-        document_id = metadata.get("doc_id", path.stem)
+        required = {"doc_id", "title", "category", "language"}
+        missing = sorted(required.difference(metadata))
+        if missing:
+            raise ValueError(f"missing required metadata in {path.name}: {', '.join(missing)}")
+        document_id = metadata["doc_id"]
         if document_id in used_ids:
             raise ValueError(f"duplicate document_id: {document_id}")
         used_ids.add(document_id)
         source_chunks = _chunk_text(content, chunk_size=chunk_size, overlap=chunk_overlap)
-        category_raw = metadata.get("category", "other")
+        category_raw = metadata["category"]
         manifest = DocumentManifest(
             document_id=document_id,
             source_file=path.name,
@@ -136,9 +143,12 @@ def ingest_corpus(
             content_hash=hashlib.sha256(raw_bytes).hexdigest(),
             ingested_at=ingested_at,
             chunk_count=len(source_chunks),
-            title=metadata.get("title", ""),
+            title=metadata["title"],
             source_url=metadata.get("source_url", ""),
-            language=metadata.get("language", "vi"),
+            language=metadata["language"],
+            source_note=metadata.get("source_note", ""),
+            reference_url=metadata.get("reference_url", ""),
+            accessed_at=metadata.get("accessed_at", ""),
         )
         manifests.append(manifest)
         for chunk_index, chunk_text in enumerate(source_chunks):
@@ -153,7 +163,17 @@ def ingest_corpus(
         encoding="utf-8",
     )
     (corpus_dir / INDEX_NAME).write_text(
-        json.dumps({"version": 1, "chunks": chunks}, ensure_ascii=False, indent=2, sort_keys=True),
+        json.dumps(
+            {
+                "version": 1,
+                "chunk_size": chunk_size,
+                "chunk_overlap": chunk_overlap,
+                "chunks": chunks,
+            },
+            ensure_ascii=False,
+            indent=2,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
     return manifests

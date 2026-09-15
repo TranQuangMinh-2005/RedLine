@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
-from src.services.rag_service import INDEX_NAME, MANIFEST_NAME, ingest_corpus, retrieve
+import pytest
+
+from src.services.rag_service import CORPUS_DIR, INDEX_NAME, MANIFEST_NAME, ingest_corpus, retrieve
 
 
 def _write_document(path: Path, *, doc_id: str, category: str, body: str) -> None:
@@ -51,3 +54,81 @@ def test_retrieve_handles_an_ambiguous_query_with_ranked_sources(tmp_path: Path)
     assert len(results) == 2
     assert results[0]["document_id"] == "shipping-policy"
     assert results[0]["score"] >= results[1]["score"]
+
+
+def test_ingestion_rejects_duplicate_document_ids(tmp_path: Path) -> None:
+    _write_document(tmp_path / "one.md", doc_id="duplicate", category="faq", body="Ná»™i dung má»™t.")
+    _write_document(tmp_path / "two.md", doc_id="duplicate", category="faq", body="Ná»™i dung hai.")
+
+    with pytest.raises(ValueError, match="duplicate document_id"):
+        ingest_corpus(tmp_path)
+
+
+def test_ingestion_is_deterministic_except_for_timestamp(tmp_path: Path) -> None:
+    _write_document(
+        tmp_path / "warranty.md",
+        doc_id="warranty-policy",
+        category="faq",
+        body="Báº£o hÃ nh sáº£n pháº©m trong mÆ°á»i hai thÃ¡ng.",
+    )
+
+    first = ingest_corpus(
+        tmp_path,
+        chunk_size=60,
+        chunk_overlap=10,
+        ingested_at="2026-09-15T00:00:00+00:00",
+    )
+    first_index = (tmp_path / INDEX_NAME).read_text(encoding="utf-8")
+    second = ingest_corpus(
+        tmp_path,
+        chunk_size=60,
+        chunk_overlap=10,
+        ingested_at="2026-09-15T00:00:00+00:00",
+    )
+    second_index = (tmp_path / INDEX_NAME).read_text(encoding="utf-8")
+
+    assert first == second
+    assert first_index == second_index
+
+
+def test_retrieve_honors_top_k_and_validates_it(tmp_path: Path) -> None:
+    for index in range(3):
+        _write_document(
+            tmp_path / f"shipping-{index}.md",
+            doc_id=f"shipping-{index}",
+            category="shipping",
+            body=f"Giao hÃ ng nhanh cho Ä‘Æ¡n hÃ ng sá»‘ {index}.",
+        )
+    ingest_corpus(tmp_path)
+
+    assert len(retrieve("giao hÃ ng", top_k=2, corpus_dir=tmp_path)) == 2
+    with pytest.raises(ValueError, match="top_k"):
+        retrieve("giao hÃ ng", top_k=0, corpus_dir=tmp_path)
+
+
+def test_retrieve_requires_an_ingested_index(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match="index is missing"):
+        retrieve("giao hÃ ng", corpus_dir=tmp_path)
+
+
+def test_versioned_corpus_has_minimum_coverage_and_provenance(tmp_path: Path) -> None:
+    source_files = sorted(Path(CORPUS_DIR).glob("*.md"))
+    assert len(source_files) >= 12
+    for source in source_files:
+        shutil.copy2(source, tmp_path / source.name)
+
+    manifests = ingest_corpus(
+        tmp_path,
+        ingested_at="2026-09-15T00:00:00+00:00",
+    )
+
+    assert len({item.document_id for item in manifests}) == len(manifests)
+    assert {"van_chuyen", "warranty"}.issubset({item.category for item in manifests})
+    assert "doi_tra_hoan_tien" in {item.category for item in manifests}
+    assert all(item.title for item in manifests)
+    assert all(item.source_url for item in manifests)
+    assert all(item.source_note for item in manifests)
+    assert all(item.reference_url.startswith("https://help.shopee.vn/") for item in manifests)
+    assert all(item.accessed_at == "2026-09-15" for item in manifests)
+    assert all(item.language == "vi" for item in manifests)
+    assert all(item.chunk_count > 0 for item in manifests)

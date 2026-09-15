@@ -26,6 +26,7 @@ services:
     environment:
       # Override cho từng run, ví dụ: DEFENSE_PROFILE=strict make up
       DEFENSE_PROFILE: ${DEFENSE_PROFILE:-none}
+      DATABASE_URL: postgresql://redline:redline@db:5432/redline
     volumes:
       - ./src:/app/src
       - ./data:/app/data

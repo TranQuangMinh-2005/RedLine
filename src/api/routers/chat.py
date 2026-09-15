@@ -9,12 +9,12 @@ from fastapi import APIRouter, HTTPException
 
 from guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_input
 from guardrails.output_filter import inspect_output
-from guardrails.profiles import get_defense_profile
 from src.agents import target_agent
 from src.agents.state_store import InMemorySessionStore, SessionLimitError
 from src.config import get_settings
 from src.logging_config import audit_event, reset_request_context, set_request_context
 from src.models.schemas import ChatRequest, ChatResponse
+from src.services import defense_state
 
 router = APIRouter()
 session_store = InMemorySessionStore(max_messages=50)
@@ -29,7 +29,7 @@ def chat(req: ChatRequest) -> ChatResponse:
 
     session_id = req.session_id or str(uuid4())
     request_id = str(uuid4())
-    profile = get_defense_profile(settings.DEFENSE_PROFILE)
+    profile = defense_state.get_active_profile()
     token = set_request_context(request_id, session_id)
     audit_event("request_received", request_id=request_id, session_id=session_id, message_length=len(req.message))
     try:

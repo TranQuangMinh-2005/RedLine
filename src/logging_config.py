@@ -39,12 +39,21 @@ def session_hash(session_id: str) -> str:
 
 def audit_event(event: str, *, request_id: str, session_id: str | None = None, **fields: Any) -> None:
     settings = get_settings()
+    # Đọc profile từ runtime state (có thể đổi qua API) thay vì .env tĩnh,
+    # nếu không log sẽ ghi sai mode khi guardrail được chuyển giữa các run.
+    try:
+        from src.services import defense_state
+
+        active_profile = defense_state.get_active_name()
+    except Exception:  # noqa: BLE001 — logging không được làm sập request
+        active_profile = settings.DEFENSE_PROFILE
+
     payload = {
         "timestamp": datetime.now(UTC).isoformat(),
         "event": event,
         "request_id": request_id,
         "session_id_hash": session_hash(session_id) if session_id else None,
-        "defense_profile": settings.DEFENSE_PROFILE,
+        "defense_profile": active_profile,
         "target_config_hash": settings.target_config_hash,
         **fields,
     }

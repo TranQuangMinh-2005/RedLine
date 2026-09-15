@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_input
 from guardrails.output_filter import inspect_output
-from guardrails.profiles import get_defense_profile
+from src.services import defense_state
 from src.agents import target_agent
 from src.config import get_settings
 from src.logging_config import audit_event, reset_request_context, set_request_context
@@ -44,7 +44,7 @@ class OpenAIChatRequest(BaseModel):
 def root() -> dict[str, Any]:
     """Root endpoint hiển thị thông tin target."""
     settings = get_settings()
-    profile = get_defense_profile(settings.DEFENSE_PROFILE)
+    profile = defense_state.get_active_profile()
     return {
         "name": "RedLine Target — Customer Assistant",
         "version": "0.1.0",
@@ -129,7 +129,7 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
 
     session_id = req.session_id or str(uuid4())
     request_id = str(uuid4())
-    profile = get_defense_profile(settings.DEFENSE_PROFILE)
+    profile = defense_state.get_active_profile()
     token = set_request_context(request_id, session_id)
     audit_event("request_received", request_id=request_id, session_id=session_id, message_length=len(last_user_message))
 

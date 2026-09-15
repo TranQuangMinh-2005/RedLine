@@ -39,3 +39,15 @@ data/shopee-rag/**/manifest.jsonl
 
 # OS
 .DS_Store
+
+# ===== Frontend (Next.js) =====
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# ===== Artifact tạm của agent/test =====
+.preview/
+.dsh-vision-router/
+.backup-w1/

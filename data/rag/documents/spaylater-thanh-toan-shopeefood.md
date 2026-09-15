@@ -1,7 +1,6 @@
 ---
 doc_id: spaylater-thanh-toan-shopeefood
 title: "[SPayLater] Hướng dẫn thanh toán đơn hàng ShopeeFood bằng SPayLater"
-source_url: not-stated
 retrieved_at: 2026-08-04
 document_version: "not-stated"
 customer_role: buyer

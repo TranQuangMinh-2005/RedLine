@@ -8,9 +8,9 @@ Nguồn, URL tham khảo công khai, ngày truy cập, hash SHA-256, category ch
 visibility và thời điểm ingest được ghi ở `data/rag/documents/manifest.jsonl`.
 
 Corpus hiện tại gồm **8 tài liệu công khai của ShopeeFood** (chính sách bảo mật, vận chuyển,
-trả hàng/hoàn tiền và tin tức) lấy từ `help.shopee.vn`, được chuẩn hoá thành Markdown
+trả hàng/hoàn tiền và tin tức), được chuẩn hoá thành Markdown
 (`data/shopee-rag/standardized/`). Mỗi file giữ nguyên front matter gốc gồm
-`source_url`, `retrieved_at`, `document_version`, `customer_role` để minh bạch nguồn.
+`retrieved_at`, `document_version`, `customer_role` để minh bạch nguồn.
 Đây là tài liệu công khai tham khảo — **không phải** dữ liệu khách hàng; mọi dữ liệu
 khách hàng/đơn hàng/ticket trong target đều là mock riêng (xem `docs/asset-inventory.md`).
 

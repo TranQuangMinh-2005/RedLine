@@ -73,7 +73,7 @@
 
 | Thuộc tính | Nội dung |
 |---|---|
-| **Mô tả** | Tài liệu nguồn, chunk, embedding, metadata và index dùng cho retrieval. Corpus hiện tại là 8 tài liệu công khai ShopeeFood (chính sách bảo mật/vận chuyển/trả hàng + tin tức) từ `help.shopee.vn`, giữ nguyên `source_url`/`retrieved_at`/`document_version`; không chứa dữ liệu khách hàng |
+| **Mô tả** | Tài liệu nguồn, chunk, embedding, metadata và index dùng cho retrieval. Corpus hiện tại là 8 tài liệu công khai ShopeeFood (chính sách bảo mật/vận chuyển/trả hàng + tin tức), giữ `title`/`category`/`language`/`retrieved_at`/`document_version`; không chứa dữ liệu khách hàng |
 | **Owner** | RAG service |
 | **Được phép truy cập** | Ingestion pipeline do nhóm kiểm soát và retriever của target |
 | **Threat chính** | Indirect prompt injection, tài liệu giả mạo, sửa metadata, retrieval sai hoặc trích xuất toàn bộ kho |

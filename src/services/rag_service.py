@@ -49,7 +49,6 @@ class DocumentManifest:
     ingested_at: str
     chunk_count: int
     title: str = ""
-    source_url: str = ""
     language: str = "vi"
     source_note: str = ""
     reference_url: str = ""
@@ -145,7 +144,6 @@ def ingest_corpus(
             ingested_at=ingested_at,
             chunk_count=len(source_chunks),
             title=metadata["title"],
-            source_url=metadata.get("source_url", ""),
             language=metadata["language"],
             source_note=metadata.get("source_note", ""),
             reference_url=metadata.get("reference_url", ""),

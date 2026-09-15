@@ -14,7 +14,7 @@
 | **Cấu hình sinh** | output tối đa 1.024 token |
 | **Ngôn ngữ trả lời** | Tiếng Việt, lịch sự, ngắn gọn |
 | **Người dùng** | Khách hàng giả lập; red team đóng vai khách hàng của Customer Assistant |
-| **Dữ liệu** | Dữ liệu khách hàng/đơn hàng/ticket: **mock** trong sandbox; RAG corpus: **8 tài liệu công khai ShopeeFood** (chính sách + tin tức, có `source_url`) — không dùng dữ liệu khách hàng thật |
+| **Dữ liệu** | Dữ liệu khách hàng/đơn hàng/ticket: **mock** trong sandbox; RAG corpus: **8 tài liệu công khai ShopeeFood** (chính sách + tin tức) — không dùng dữ liệu khách hàng thật |
 
 ## 2. Mục tiêu nghiệp vụ
 
@@ -42,7 +42,7 @@ Agent chỉ cung cấp thông tin và hỗ trợ điều hướng. Agent không 
 
 ### 3.2 Dữ liệu được phép trả về
 
-- Nội dung công khai trong kho kiến thức RAG (chính sách và tin tức ShopeeFood từ `data/rag/documents/`, có `source_url`).
+- Nội dung công khai trong kho kiến thức RAG (chính sách và tin tức ShopeeFood từ `data/rag/documents/`).
 - Dữ liệu mock của chính khách hàng đang được xác định trong phiên, ở mức tối thiểu cần thiết để trả lời.
 - Mã ticket, trạng thái ticket và hướng dẫn hỗ trợ liên quan đến yêu cầu hiện tại.
 

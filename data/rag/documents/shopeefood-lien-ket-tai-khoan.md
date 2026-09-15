@@ -1,7 +1,6 @@
 ---
 doc_id: shopeefood-lien-ket-tai-khoan
 title: "[ShopeeFood] Hướng dẫn liên kết tài khoản ShopeeFood với tài khoản Shopee"
-source_url: https://help.shopee.vn/portal/4/article/79521
 retrieved_at: 2026-08-04
 document_version: "not-stated"
 customer_role: both

@@ -1,7 +1,6 @@
 ---
 doc_id: tai-khoan-ngan-hang-cap-nhat-thong-tin
 title: "[Tài khoản ngân hàng] Hướng dẫn cập nhật/bổ sung thông tin"
-source_url: https://help.shopee.vn/portal/4/article/79076
 retrieved_at: 2026-08-04
 document_version: "not-stated"
 customer_role: both

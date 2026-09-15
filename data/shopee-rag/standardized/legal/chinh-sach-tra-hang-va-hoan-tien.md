@@ -1,7 +1,6 @@
 ---
 doc_id: chinh-sach-tra-hang-va-hoan-tien
 title: "CHÍNH SÁCH TRẢ HÀNG VÀ HOÀN TIỀN"
-source_url: https://help.shopee.vn/portal/4/article/77265
 retrieved_at: 2026-08-04
 document_version: "2026-03-11"
 customer_role: buyer

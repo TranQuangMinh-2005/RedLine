@@ -1,7 +1,6 @@
 ---
 doc_id: shopeefood-dat-mon
 title: "[ShopeeFood] Hướng dẫn đặt món với ShopeeFood"
-source_url: https://help.shopee.vn/portal/4/article/79563
 retrieved_at: 2026-08-04
 document_version: "not-stated"
 customer_role: buyer

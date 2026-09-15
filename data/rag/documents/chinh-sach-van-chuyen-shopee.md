@@ -1,7 +1,6 @@
 ---
 doc_id: chinh-sach-van-chuyen-shopee
 title: "CHÍNH SÁCH VẬN CHUYỂN SHOPEE"
-source_url: https://help.shopee.vn/portal/4/article/77484
 retrieved_at: 2026-08-04
 document_version: "2026-03-20"
 customer_role: both

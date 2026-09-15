@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from src.models.db import Customer, Order, Ticket, init_db, session_scope
+from src.db.models import Customer, Order, Ticket, init_db, session_scope
 
 CUSTOMERS = (
     {"id": "CUS-001", "name": "Khach Hang Mau 01", "email": "customer01@example.test", "phone": "0900000001", "address": "Dia chi gia lap 01, Viet Nam"},

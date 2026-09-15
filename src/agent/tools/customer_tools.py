@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from src.models.db import Customer, Ticket, session_scope
+from src.db.models import Customer, Ticket, session_scope
 from src.services.rag_service import retrieve
 
 MAX_QUERY_LENGTH = 1000

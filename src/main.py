@@ -20,7 +20,7 @@ from src.api.routers.config import router as config_router
 from src.api.routers.openai_compat import router as openai_router
 from src.config import get_settings
 from src.logging_config import configure_logging
-from src.services import defense_state
+from src.guardrails import state as defense_state
 
 app = FastAPI(
     title="RedLine Target — Customer Assistant",

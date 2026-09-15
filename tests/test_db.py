@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
-from src.ingestion.seed_data import CUSTOMERS, ORDERS, TICKETS, seed_database
-from src.models.db import Customer, Order, Ticket, session_scope
+from src.db.seed_data import CUSTOMERS, ORDERS, TICKETS, seed_database
+from src.db.models import Customer, Order, Ticket, session_scope
 
 
 def _count(model: type[Customer] | type[Order] | type[Ticket]) -> int:

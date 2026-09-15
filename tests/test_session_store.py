@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from src.agents.state_store import InMemorySessionStore, SessionLimitError
+from src.agent.session import InMemorySessionStore, SessionLimitError
 
 
 def test_store_creates_a_uuid_session_and_preserves_message_order() -> None:

@@ -6,7 +6,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 
-from guardrails.profiles import DefenseProfile
+from src.guardrails.profiles import DefenseProfile
 
 BLOCKED_INPUT_REPLY = (
     "Tôi không thể thực hiện yêu cầu thay đổi quy tắc hoặc tiết lộ thông tin nội bộ. "

@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import func, select
 
-from src.agents.tools.customer_tools import create_ticket, get_ticket
-from src.models.db import Ticket, session_scope
+from src.agent.tools.customer_tools import create_ticket, get_ticket
+from src.db.models import Ticket, session_scope
 
 
 def _ticket_count() -> int:

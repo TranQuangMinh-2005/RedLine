@@ -1,6 +1,6 @@
-from guardrails.input_filter import inspect_input
-from guardrails.output_filter import BLOCKED_OUTPUT_REPLY, inspect_output
-from guardrails.profiles import DefenseProfile
+from src.guardrails.input_filter import inspect_input
+from src.guardrails.output_filter import BLOCKED_OUTPUT_REPLY, inspect_output
+from src.guardrails.profiles import DefenseProfile
 
 
 NONE = DefenseProfile("none", False, False, False, False)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from guardrails.profiles import DefenseProfile
+from src.guardrails.profiles import DefenseProfile
 
 BLOCKED_OUTPUT_REPLY = (
     "Tôi không thể cung cấp thông tin nội bộ hoặc dữ liệu nhạy cảm. "

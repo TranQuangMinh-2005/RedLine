@@ -7,10 +7,10 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from guardrails.profiles import VALID_PROFILE_NAMES, get_defense_profile
+from src.guardrails.profiles import VALID_PROFILE_NAMES, get_defense_profile
 from src.config import get_settings
 from src.logging_config import audit_event
-from src.services import defense_state
+from src.guardrails import state as defense_state
 
 router = APIRouter(tags=["config"])
 

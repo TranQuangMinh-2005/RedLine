@@ -4,6 +4,12 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
+
+# Đảm bảo root directory của project có trong sys.path khi chạy script trực tiếp
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from src.services.rag_service import CORPUS_DIR, ingest_corpus
 

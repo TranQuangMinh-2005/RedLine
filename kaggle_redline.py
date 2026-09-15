@@ -225,6 +225,7 @@ else:
 # --- 5) Seed Database Mock & Ingest RAG Knowledge Base ---
 print("\n>>> Nạp dữ liệu sandbox...", flush=True)
 # Đặt cấu hình môi trường cho RedLine
+os.environ["PYTHONPATH"] = f"{REPO_DIR}:{os.environ.get('PYTHONPATH', '')}"
 os.environ["LLM_PROVIDER"] = "ollama" if LLM_BACKEND == "ollama" else "external"
 os.environ["LLM_MODEL"] = llm_model
 os.environ["LLM_BASE_URL"] = llm_base_url

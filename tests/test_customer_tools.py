@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.agents.tools import customer_tools
+from src.agent.tools import customer_tools
 
 
 def test_get_customer_info_returns_one_customer_only(seeded_database: None) -> None:

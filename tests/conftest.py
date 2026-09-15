@@ -8,11 +8,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src import logging_config
-from src.agents.state_store import InMemorySessionStore
+from src.agent.session import InMemorySessionStore
 from src.api.routers import chat as chat_router
-from src.ingestion.seed_data import seed_database
+from src.db.seed_data import seed_database
 from src.main import app
-from src.models.db import configure_database, init_db
+from src.db.models import configure_database, init_db
 from src.services import redact as redact_module
 
 

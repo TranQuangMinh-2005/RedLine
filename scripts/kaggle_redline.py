@@ -307,7 +307,7 @@ os.environ["LLM_API_KEY"] = "ollama"
 os.environ["DATABASE_URL"] = "sqlite:///./data/redline.db"
 os.environ["DEFENSE_PROFILE"] = DEFENSE_PROFILE
 
-sh(f"{sys.executable} -m src.ingestion.seed_data")
+sh(f"{sys.executable} -m src.db.seed_data")
 sh(f"{sys.executable} scripts/ingest_rag.py")
 
 # --- 6) Mở ngrok tunnel ---

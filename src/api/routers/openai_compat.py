@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_input
 from guardrails.output_filter import inspect_output
 from src.services import defense_state
-from src.agents import target_agent
+from src.agent import target_agent
 from src.config import get_settings
 from src.logging_config import audit_event, reset_request_context, set_request_context
 

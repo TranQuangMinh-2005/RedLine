@@ -1,12 +1,28 @@
-"""Thread-safe, process-local session store."""
+"""Conversation state models + thread-safe session store."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from threading import RLock
 from uuid import uuid4
 
-from src.agents.state import Message, SessionState
+
+@dataclass(frozen=True)
+class Message:
+    role: str
+    content: str
+
+    def as_dict(self) -> dict[str, str]:
+        return {"role": self.role, "content": self.content}
+
+
+@dataclass
+class SessionState:
+    session_id: str
+    messages: list[Message] = field(default_factory=list)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class SessionLimitError(RuntimeError):

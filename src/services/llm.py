@@ -20,14 +20,15 @@ _client: OpenAI | None = None
 
 
 def get_client() -> OpenAI:
-    """Lazy-init OpenAI client trỏ tới Groq."""
+    """Lazy-init OpenAI client trỏ tới Groq hoặc Ollama."""
     global _client
     if _client is None:
         settings = get_settings()
+        api_key = settings.LLM_API_KEY.strip() or "ollama"
         _client = OpenAI(
-            api_key=settings.LLM_API_KEY,
+            api_key=api_key,
             base_url=settings.LLM_BASE_URL,
-            timeout=60.0,
+            timeout=120.0,
             max_retries=2,
         )
     return _client
@@ -79,11 +80,11 @@ def chat(
     choice = resp.choices[0]
     tool_calls = [
         {
-            "id": call.id,
+            "id": call.id or f"call_{i}",
             "type": "function",
             "function": {"name": call.function.name, "arguments": call.function.arguments},
         }
-        for call in (choice.message.tool_calls or [])
+        for i, call in enumerate(choice.message.tool_calls or [])
     ]
     return {
         "text": choice.message.content or "",

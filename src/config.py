@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     REDACT_SECRETS: bool = True
 
+    # --- NGROK (cho Kaggle / remote tunnel) ---
+    NGROK_AUTHTOKEN: str = ""
+
     @property
     def target_config_hash(self) -> str:
         """Hash cấu hình mục tiêu — W3 ghi kèm mỗi kết quả để tái lập.

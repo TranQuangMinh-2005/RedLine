@@ -128,7 +128,13 @@ def respond(
                 tool_name=name,
             )
             try:
-                arguments = json.loads(function.get("arguments", "{}"))
+                raw_args = function.get("arguments", "{}")
+                if isinstance(raw_args, dict):
+                    arguments = raw_args
+                elif isinstance(raw_args, str):
+                    arguments = json.loads(raw_args or "{}")
+                else:
+                    raise ValueError("arguments must be an object")
                 if not isinstance(arguments, dict):
                     raise ValueError("arguments must be an object")
                 if name == "search_knowledge":

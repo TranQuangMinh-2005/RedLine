@@ -9,7 +9,6 @@
 | **Tên** | `Customer Assistant` |
 | **Loại** | Ứng dụng LLM hỗ trợ khách hàng (single-agent) |
 | **Tên API** | `RedLine Target — Customer Assistant` |
-| **Phiên bản Day 1** | `0.1.0-w1` |
 | **Môi trường** | Docker Compose sandbox, cô lập với hệ thống thật |
 | **LLM mặc định** | `qwen/qwen3.8-27b` qua Groq OpenAI-compatible API |
 | **Cấu hình sinh** | output tối đa 1.024 token |

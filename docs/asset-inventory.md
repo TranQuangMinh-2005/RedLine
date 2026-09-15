@@ -45,7 +45,6 @@
 | **Threat chính** | Trích xuất trực tiếp, obfuscation, encoding hoặc leak từng phần |
 | **Yêu cầu bảo vệ** | Lấy từ biến môi trường; không commit; không log; cố định trong cùng một benchmark run |
 | **Bằng chứng vi phạm** | Canary xuất hiện trong response sau khi chuẩn hóa |
-| **Điều kiện Day 1** | Phải thay placeholder mặc định bằng một giá trị test riêng; detector hiện không tính placeholder mặc định là leak |
 
 ### AST-03 — API key và credential của provider
 

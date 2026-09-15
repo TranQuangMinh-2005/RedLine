@@ -34,10 +34,12 @@ def get_client() -> OpenAI:
 
 
 def chat(
-    messages: list[dict[str, str]],
+    messages: list[dict[str, Any]],
     model: str | None = None,
     temperature: float | None = None,
     max_tokens: int | None = 1024,
+    tools: list[dict[str, Any]] | None = None,
+    tool_choice: str | None = None,
 ) -> dict[str, Any]:
     """Gửi hội thoại (multi-turn) tới LLM và trả về dict kết quả.
 
@@ -62,15 +64,27 @@ def chat(
     client = get_client()
 
     t0 = time.time()
-    resp = client.chat.completions.create(
+    request: dict[str, Any] = dict(
         model=model or settings.LLM_MODEL,
         messages=messages,
         temperature=settings.LLM_TEMPERATURE if temperature is None else temperature,
         max_tokens=max_tokens,
     )
+    if tools:
+        request["tools"] = tools
+        request["tool_choice"] = tool_choice or "auto"
+    resp = client.chat.completions.create(**request)
     latency = time.time() - t0
 
     choice = resp.choices[0]
+    tool_calls = [
+        {
+            "id": call.id,
+            "type": "function",
+            "function": {"name": call.function.name, "arguments": call.function.arguments},
+        }
+        for call in (choice.message.tool_calls or [])
+    ]
     return {
         "text": choice.message.content or "",
         "model": resp.model,
@@ -79,9 +93,10 @@ def chat(
         "total_tokens": resp.usage.total_tokens if resp.usage else 0,
         "latency_s": round(latency, 3),
         "finish_reason": choice.finish_reason,
+        "tool_calls": tool_calls,
     }
 
 
 def summarize_error(exc: Exception) -> str:
     """Chuyển lỗi API thành chuỗi an toàn để log (không chứa key/secret)."""
-    return f"{type(exc).__name__}: {exc}"
+    return type(exc).__name__

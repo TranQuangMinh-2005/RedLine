@@ -1,10 +1,5 @@
 # RedLine
 
-Cây thư mục tham chiếu từ **P-187** (`/Users/minh/Desktop/AIInAction/P-187`).
-
-**Nguồn:** `https://github.com/AI20K-Build-Phase-Cohort-3/P-187.git`
-**Nhánh:** `origin/main` @ `73ec069ae3dec93935fd5f08fbf2dc9283a4d8f1` (2026-09-06)
-
 ## Bật/tắt guardrail
 
 Guardrail dùng một profile cố định cho mỗi benchmark run. Đổi profile sẽ build và

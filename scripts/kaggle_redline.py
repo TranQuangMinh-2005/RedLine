@@ -116,6 +116,74 @@ def get_secret(name, required=False):
     return ""
 
 
+def pull_ollama_model(model_name: str):
+    """Tải model qua Ollama HTTP API với thanh tiến độ gọn gàng (không spam log Notebook)."""
+    print(f">>> Đang tải '{model_name}' (mất ~2-3 phút trên kết nối Kaggle)...", flush=True)
+    pull_url = "http://localhost:11434/api/pull"
+    payload = json.dumps({"name": model_name, "stream": True}).encode("utf-8")
+    req = urllib.request.Request(
+        pull_url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+    )
+
+    last_pct = -1
+    last_status = None
+    try:
+        with urllib.request.urlopen(req, timeout=1800) as resp:
+            for raw_line in resp:
+                if not raw_line:
+                    continue
+                try:
+                    chunk = json.loads(raw_line.decode("utf-8"))
+                except Exception:
+                    continue
+
+                status = chunk.get("status", "")
+                total = chunk.get("total", 0)
+                completed = chunk.get("completed", 0)
+
+                if total and total > 50 * 1024 * 1024:  # File weights chính (>50MB)
+                    pct = int(completed / total * 100)
+                    if pct != last_pct and pct % 10 == 0:
+                        last_pct = pct
+                        total_gib = total / (1024**3)
+                        comp_gib = completed / (1024**3)
+                        print(f"    - Tiến độ tải: {pct}% ({comp_gib:.1f}/{total_gib:.1f} GiB)", flush=True)
+                elif status and status != last_status:
+                    if not status.startswith("downloading"):
+                        print(f"    - {status}", flush=True)
+                        last_status = status
+    except Exception as exc:
+        print(f"!!! Lỗi khi stream pull qua API ({exc}), chuyển sang lệnh dự phòng...", flush=True)
+        sh(f"ollama pull {model_name}")
+
+
+def warmup_ollama_model(model_name: str):
+    """Nạp trước model vào GPU VRAM (Warm-up) để tránh cold-start khi gửi tin nhắn đầu tiên."""
+    print(">>> Nạp trước mô hình vào VRAM GPU (Warm-up)...", flush=True)
+    t0 = time.time()
+    try:
+        url = "http://localhost:11434/api/generate"
+        payload = json.dumps({
+            "model": model_name,
+            "prompt": "hi",
+            "stream": False,
+            "keep_alive": "24h",
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            _ = resp.read()
+        dur = round(time.time() - t0, 1)
+        print(f">>> Mô hình đã nạp sẵn vào GPU VRAM (xong sau {dur}s, sẵn sàng trả lời ngay).", flush=True)
+    except Exception as exc:
+        print(f">>> Bỏ qua bước warm-up: {exc}", flush=True)
+
+
 # =====================================================================
 #  MAIN
 # =====================================================================
@@ -176,8 +244,11 @@ if LLM_BACKEND == "ollama":
 
     if not ollama_ready:
         print(f">>> Khởi động Ollama daemon (log: {OLLAMA_LOG})...", flush=True)
+        os.environ["OLLAMA_KEEP_ALIVE"] = "24h"
+        ollama_env = os.environ.copy()
+        ollama_env["OLLAMA_KEEP_ALIVE"] = "24h"
         ollama_log_file = open(OLLAMA_LOG, "w")
-        subprocess.Popen(["ollama", "serve"], stdout=ollama_log_file, stderr=subprocess.STDOUT)
+        subprocess.Popen(["ollama", "serve"], stdout=ollama_log_file, stderr=subprocess.STDOUT, env=ollama_env)
 
         t0 = time.time()
         while time.time() - t0 < 30:
@@ -210,8 +281,11 @@ if LLM_BACKEND == "ollama":
         need_pull = True
 
     if need_pull:
-        print(f">>> Đang tải '{MODEL_NAME}' (mất ~2-3 phút trên kết nối Kaggle)...", flush=True)
-        sh(f"ollama pull {MODEL_NAME}")
+        pull_ollama_model(MODEL_NAME)
+    else:
+        print(f">>> Mô hình '{MODEL_NAME}' đã có sẵn trong Ollama cache.", flush=True)
+
+    warmup_ollama_model(MODEL_NAME)
     print(f">>> Mô hình '{MODEL_NAME}' đã sẵn sàng trên 2x T4 GPU.", flush=True)
 
     llm_base_url = "http://localhost:11434/v1"

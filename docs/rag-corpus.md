@@ -4,10 +4,15 @@
 
 Corpus được duyệt nằm trong `data/rag/documents/`; mỗi file Markdown là một tài liệu public và có
 front matter với tối thiểu `doc_id`, `title`, `category`, và `language`.
-Nguồn mock, URL tham khảo công khai, ngày truy cập, hash SHA-256, category chuẩn hóa,
+Nguồn, URL tham khảo công khai, ngày truy cập, hash SHA-256, category chuẩn hóa,
 visibility và thời điểm ingest được ghi ở `data/rag/documents/manifest.jsonl`.
-Nội dung được biên soạn lại cho sandbox RedShop, không sao chép nguyên văn và không
-được hiểu là chính sách chính thức của nguồn tham khảo.
+
+Corpus hiện tại gồm **8 tài liệu công khai của ShopeeFood** (chính sách bảo mật, vận chuyển,
+trả hàng/hoàn tiền và tin tức) lấy từ `help.shopee.vn`, được chuẩn hoá thành Markdown
+(`data/shopee-rag/standardized/`). Mỗi file giữ nguyên front matter gốc gồm
+`source_url`, `retrieved_at`, `document_version`, `customer_role` để minh bạch nguồn.
+Đây là tài liệu công khai tham khảo — **không phải** dữ liệu khách hàng; mọi dữ liệu
+khách hàng/đơn hàng/ticket trong target đều là mock riêng (xem `docs/asset-inventory.md`).
 
 ## Ingest
 

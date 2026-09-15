@@ -1,4 +1,4 @@
-# Kiến trúc — RedShop Customer Support Agent
+# Kiến trúc — Customer Assistant (Target App)
 
 > W1 task 1.2 · Deliverable: Architecture diagram
 > Done khi: có diagram end-to-end (Agent, API, RAG, DB, Tools, Session)
@@ -17,7 +17,7 @@ flowchart LR
     subgraph sandbox["TARGET APP — Docker Compose Sandbox"]
         API["FastAPI<br/>/chat · /health"]
         SESS["Session Store<br/>session_id + lịch sử multi-turn"]
-        AGENT["Agent (1 LLM làm hết)<br/>RedShopAssistant<br/>• system prompt + canary<br/>• truy vấn RAG<br/>• gọi tool<br/>• trả lời"]
+        AGENT["Agent (1 LLM làm hết)<br/>Customer Assistant<br/>• system prompt + canary<br/>• truy vấn RAG<br/>• gọi tool<br/>• trả lời"]
         RAG["RAG Service<br/>(embedding + retrieve)"]
         VEC[("Vector DB<br/>tài liệu kiến thức")]
         TOOLS["Tools<br/>get_customer_info<br/>create_ticket (side-effect)"]

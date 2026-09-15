@@ -30,5 +30,12 @@ data/rag/documents/manifest.jsonl
 data/rag/documents/index.json
 data/*.db
 
+# Corpus nguồn (landing/raw + standardized) — track để tái lập được
+!data/shopee-rag/
+!data/shopee-rag/**
+# Artifact ingest của shopee-rag cũng bị ignore (tái tạo được từ source)
+data/shopee-rag/**/index.json
+data/shopee-rag/**/manifest.jsonl
+
 # OS
 .DS_Store

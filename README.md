@@ -96,87 +96,63 @@ docker compose down -v
 
 Lệnh cuối xóa dữ liệu sandbox trong Docker volume; không dùng khi cần giữ evidence.
 
-## 3. Chạy trên Kaggle Notebook (2x T4 GPU + Ollama + ngrok)
+## 3. Chạy trên Kaggle — Ollama + giao diện chat
 
-RedLine hỗ trợ chạy trực tiếp trên **Kaggle Notebook** với **2x GPU NVIDIA T4 (32 GB VRAM)**, sử dụng mô hình mã nguồn mở qua **Ollama** và mở cổng API ra Internet bằng **ngrok**:
+Mở hoặc upload [`notebooks/kaggle_redline.ipynb`](notebooks/kaggle_redline.ipynb)
+lên Kaggle. Notebook dùng chung launcher [`scripts/kaggle_redline.py`](scripts/kaggle_redline.py),
+không chứa bản sao code khởi động.
 
-- **Model mặc định**: `qwen2.5:14b` (khoảng 9 GB, Q4_K_M) — tối ưu cho 2x T4 GPU, hỗ trợ tiếng Việt xuất sắc và native tool calling. Có thể đổi sang `qwen2.5:7b` nếu muốn tải nhanh hơn.
-- **Database sandbox**: Tự động dùng SQLite (`data/redline.db`) nạp sẵn dữ liệu mock khách hàng, đơn hàng và ticket.
-- **RAG Knowledge Base**: Tự động lập chỉ mục 14 tài liệu chính sách mock trong `data/rag/documents/`.
-- **Public API**: Expose cổng FastAPI `8000` ra Internet qua ngrok tunnel.
+1. Bật **Internet** và chọn **GPU T4 x2** (hoặc NVIDIA GPU đủ VRAM).
+2. Tạo và Attach Kaggle Secret **`NGROK_AUTH_TOKEN`**. Có thể thêm **`CANARY_TOKEN`**
+   riêng để tái lập benchmark; nếu thiếu, launcher sinh canary mới và không in ra log.
+3. Trong cell cấu hình, chọn `MODEL`, `DEFENSE_PROFILE`, `ENABLE_UI`.
+   Mặc định: `qwen2.5:14b`, profile `none`, UI bật. Có thể chọn `qwen2.5:7b`
+   nếu cần giảm bộ nhớ/dung lượng tải.
+4. Chạy cell lấy repo, cài Python và cài Ollama/Node. Python 3.11 chạy trong `.venv`
+   riêng với dependency từ `uv.lock`; không cài project bằng `pip install -e .`.
+5. Chạy cell khởi động. Notebook chờ tải model, seed SQLite, ingest corpus,
+   kiểm thử hai chế độ và xác minh Agent thực sự gọi `search_knowledge`.
+6. Khi `state=ready`, mở **Giao diện** để chat và chọn **Agent / LLM thuần** ở bên trái.
+   Cell kết thúc, dịch vụ tiếp tục chạy nền. Dùng cell cuối để dừng.
 
-### Chuẩn bị trên Kaggle:
-1. Mở Kaggle Notebook, tại khung **Settings** bên phải:
-   - **Accelerator**: Chọn `GPU T4 x 2`
-   - **Internet**: Chọn `Internet on`
-2. Thêm token ngrok: Vào menu **Add-ons** -> **Secrets** -> thêm nhãn `NGROK_AUTH_TOKEN` (lấy từ [dashboard.ngrok.com](https://dashboard.ngrok.com/get-started/your-authtoken)) và bật **Attach to notebook**.
-   > **Lưu ý về Ngrok**: Hiện nay Ngrok yêu cầu liên kết thông tin thanh toán (billing linking/card verification) để kích hoạt tài khoản, nhưng bạn hoàn toàn có thể sử dụng gói **Free Tier (5 GB băng thông/tháng)** — mức dung lượng này là quá đủ cho các lượt gửi/nhận prompt và văn bản test bảo mật.
+| Cấu hình | Giao diện | API base | OpenAI base URL |
+|---|---|---|---|
+| `ENABLE_UI=True` | `https://<tunnel>` | `https://<tunnel>/api` | `https://<tunnel>/api/v1` |
+| `ENABLE_UI=False` | Không chạy | `https://<tunnel>` | `https://<tunnel>/v1` |
 
-### Cách 1: Chạy One-shot (1 cell duy nhất)
-Dán đoạn mã sau vào 1 cell của Kaggle Notebook rồi bấm **Run**:
-
-```python
-import os, subprocess, sys
-
-REPO_URL = "https://github.com/TranQuangMinh-2005/RedLine.git"
-BRANCH = "main"
-WORKING_DIR = "/kaggle/working"
-if os.path.exists(WORKING_DIR):
-    os.chdir(WORKING_DIR)
-
-if not os.path.exists("RedLine"):
-    subprocess.run(f"git clone -b {BRANCH} {REPO_URL}", shell=True, check=True)
-    os.chdir("RedLine")
-else:
-    os.chdir("RedLine")
-    subprocess.run(f"git fetch origin && git checkout {BRANCH} && git pull origin {BRANCH}", shell=True, check=False)
-
-subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-e", ".", "pyngrok"], check=True)
-subprocess.run([sys.executable, "kaggle_redline.py"], check=True)
-```
-
-### Cách 2: Mở trực tiếp file Notebook
-Bạn có thể mở hoặc upload file notebook có sẵn: [`notebooks/kaggle_redline.ipynb`](notebooks/kaggle_redline.ipynb).
-
-### Kiểm thử API từ bên ngoài:
-Sau khi khởi động, ngrok sẽ in ra đường link Public API (dạng `https://xxxx.ngrok-free.app`). Bạn có thể gọi API theo 2 chuẩn:
-
-#### Chuẩn 1: OpenAI-compatible API (`/v1/chat/completions`, `/v1/models`, `/`)
-Dùng trực tiếp với thư viện OpenAI (`OpenAI(base_url="https://xxxx.ngrok-free.app/v1")`), LangChain, LlamaIndex, Chatbot UI, hoặc curl:
+Khi gọi từ bên ngoài, thêm header `ngrok-skip-browser-warning: true` nếu cần.
+Ví dụ với UI bật:
 
 ```bash
-# 1. Danh sách models
-curl -H "ngrok-skip-browser-warning: true" https://xxxx.ngrok-free.app/v1/models
-
-# 2. Chat Completions (Agent tự động kích hoạt RAG và Tool tra cứu)
-curl -X POST https://xxxx.ngrok-free.app/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "ngrok-skip-browser-warning: true" \
-  -d '{
-    "model": "qwen2.5:14b",
-    "messages": [{"role": "user", "content": "Chính sách đổi trả như thế nào?"}]
-  }'
+curl -X POST https://<tunnel>/api/chat \
+  -H 'Content-Type: application/json' \
+  -H 'ngrok-skip-browser-warning: true' \
+  -d '{"message":"Giúp tôi soạn yêu cầu hỗ trợ", "mode":"llm"}'
 ```
 
-#### Chuẩn 2: Native Target API (`/chat`, `/health`)
+API quản lý tài liệu ở `<API base>/rag/documents`. Corpus hiện có 8 file Markdown;
+launcher in số tài liệu thực tế khi ingest. Chỉ Agent sử dụng RAG.
+
+Để chạy launcher trực tiếp trên máy Linux đã cài Ollama, GPU và dependencies:
+
 ```bash
-# 1. Healthcheck
-curl -H "ngrok-skip-browser-warning: true" https://xxxx.ngrok-free.app/health
-
-# 2. Test chat RAG
-curl -X POST https://xxxx.ngrok-free.app/chat \
-  -H "Content-Type: application/json" \
-  -H "ngrok-skip-browser-warning: true" \
-  -d '{"message":"Chính sách đổi trả như thế nào?"}'
-
-# 3. Test gọi tool tra cứu khách hàng mock
-curl -X POST https://xxxx.ngrok-free.app/chat \
-  -H "Content-Type: application/json" \
-  -H "ngrok-skip-browser-warning: true" \
-  -d '{"message":"Kiểm tra thông tin khách hàng CUS-001 giúp tôi"}'
+uv sync --locked --no-dev --python 3.11
+# Đặt NGROK_AUTHTOKEN trong môi trường; không đưa token vào command/log được chia sẻ.
+uv run --locked --no-dev python scripts/kaggle_redline.py --ui --model qwen2.5:14b
 ```
 
-*(Lưu ý: Header `ngrok-skip-browser-warning: true` giúp bypass trang thông báo trình duyệt của ngrok).*
+UI cần Node.js/npm; notebook tự cài Node 22 nếu thiếu phiên bản phù hợp.
+Bỏ `--ui` để chỉ chạy backend. Launcher hỗ trợ `--help`.
+
+Runtime artifacts nằm trong `runs/kaggle/` (Git ignore): log, SQLite, trạng thái và
+model cache nếu launcher tự khởi động Ollama. Không sửa `.env` của repo.
+Launcher chỉ dừng các process do nó tạo; nếu reuse Ollama có sẵn, daemon đó vẫn chạy
+và giữ cấu hình/cache cũ. Ollama tự chọn GPU phù hợp, không bảo đảm luôn dùng cả hai T4.
+
+Notebook phục vụ phiên sandbox tương tác, không phải hosting liên tục. API quản lý
+RAG/guardrail chưa có xác thực: chỉ chia sẻ tunnel với người tham gia thử nghiệm.
+Dùng **Stop session** khi xong để kết thúc phiên GPU. Không công khai notebook output
+hoặc artifact chứa dữ liệu thử nhạy cảm.
 
 ## 4. Gọi Chat API
 

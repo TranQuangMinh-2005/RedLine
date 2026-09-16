@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     LLM_API_KEY: str = ""
     LLM_BASE_URL: str = "https://api.groq.com/openai/v1"
     LLM_TEMPERATURE: float = 0.0
+    LLM_TIMEOUT_SECONDS: float = 120.0
 
     # --- TARGET ---
     TARGET_HOST: str = "0.0.0.0"

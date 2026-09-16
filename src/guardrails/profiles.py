@@ -21,6 +21,8 @@ class DefenseProfile:
     prompt_hardening: bool
     canary_check: bool
     tool_authorization: bool
+    rag_filter: bool = False
+    action_policy: bool = False
 
 
 @lru_cache(maxsize=1)
@@ -51,6 +53,8 @@ def get_defense_profile(name: str | None = None) -> DefenseProfile:
         "prompt_hardening",
         "canary_check",
         "tool_authorization",
+        "rag_filter",
+        "action_policy",
     }
     if not isinstance(raw, dict) or set(raw) != required:
         raise RuntimeError(f"guardrail profile {selected!r} must define exactly {sorted(required)}")
@@ -64,4 +68,6 @@ def get_defense_profile(name: str | None = None) -> DefenseProfile:
         prompt_hardening=raw["prompt_hardening"],
         canary_check=raw["canary_check"],
         tool_authorization=raw["tool_authorization"],
+        rag_filter=raw["rag_filter"],
+        action_policy=raw["action_policy"],
     )

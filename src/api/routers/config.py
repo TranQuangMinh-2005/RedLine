@@ -7,10 +7,10 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from src.guardrails.profiles import VALID_PROFILE_NAMES, get_defense_profile
 from src.config import get_settings
-from src.logging_config import audit_event
 from src.guardrails import state as defense_state
+from src.guardrails.profiles import VALID_PROFILE_NAMES, get_defense_profile
+from src.logging_config import audit_event
 
 router = APIRouter(tags=["config"])
 
@@ -36,6 +36,8 @@ def read_defense_profile() -> dict:
                 "prompt_hardening": p.prompt_hardening,
                 "canary_check": p.canary_check,
                 "tool_authorization": p.tool_authorization,
+                "rag_filter": p.rag_filter,
+                "action_policy": p.action_policy,
             }
         )
     return {
@@ -49,6 +51,8 @@ def read_defense_profile() -> dict:
             "prompt_hardening": profile.prompt_hardening,
             "canary_check": profile.canary_check,
             "tool_authorization": profile.tool_authorization,
+            "rag_filter": profile.rag_filter,
+            "action_policy": profile.action_policy,
         },
         "options": options,
     }
@@ -75,6 +79,8 @@ def update_defense_profile(req: DefenseProfileRequest) -> dict:
         input_filter=profile.input_filter,
         output_filter=profile.output_filter,
         tool_authorization=profile.tool_authorization,
+        rag_filter=profile.rag_filter,
+        action_policy=profile.action_policy,
     )
     return {
         "previous": previous,
@@ -85,5 +91,7 @@ def update_defense_profile(req: DefenseProfileRequest) -> dict:
             "prompt_hardening": profile.prompt_hardening,
             "canary_check": profile.canary_check,
             "tool_authorization": profile.tool_authorization,
+            "rag_filter": profile.rag_filter,
+            "action_policy": profile.action_policy,
         },
     }

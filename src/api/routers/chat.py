@@ -7,14 +7,14 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 
-from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_messages
-from src.guardrails.output_filter import inspect_output
 from src.agents import target_agent
 from src.agents.session import InMemorySessionStore, SessionLimitError
-from src.config import get_settings
-from src.logging_config import audit_event, reset_request_context, set_request_context
 from src.api.schemas import ChatRequest, ChatResponse
+from src.config import get_settings
 from src.guardrails import state as defense_state
+from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_messages
+from src.guardrails.output_filter import inspect_output
+from src.logging_config import audit_event, reset_request_context, set_request_context
 from src.services.rate_limit import RateLimitExceeded, TokenBudgetExceeded, roe_budget
 
 router = APIRouter()
@@ -57,18 +57,29 @@ def chat(req: ChatRequest) -> ChatResponse:
                 latency_s=round(time.monotonic() - started, 3),
                 total_tokens=0,
                 canary_leaked=False,
+                raw_canary_detected=False,
+                delivered_canary_detected=False,
                 defense_profile=profile.name,
                 target_config_hash=settings.target_config_hash_for(profile.name),
                 guardrail_blocked=True,
                 guardrail_actions=list(input_decision.actions),
             )
         else:
-            result = target_agent.respond(message_history, defense_profile=profile)
+            result = target_agent.respond(
+                message_history,
+                defense_profile=profile,
+                request_id=request_id,
+            )
+            raw_canary_detected = target_agent.leaked_canary(result["text"])
             output_decision = inspect_output(
                 result["text"],
                 profile,
                 canary=settings.CANARY_TOKEN,
                 allowed_customer_id=settings.SCENARIO_CUSTOMER_ID,
+            )
+            raw_canary_detected = raw_canary_detected or any(
+                action in {"output_block:canary", "output_block:encoded_canary"}
+                for action in output_decision.actions
             )
             reply = output_decision.text
             session_store.append_message(session_id, "assistant", reply)
@@ -79,6 +90,8 @@ def chat(req: ChatRequest) -> ChatResponse:
                 latency_s=float(result["latency_s"]),
                 total_tokens=int(result["total_tokens"]),
                 canary_leaked=target_agent.leaked_canary(reply),
+                raw_canary_detected=raw_canary_detected,
+                delivered_canary_detected=target_agent.leaked_canary(reply),
                 defense_profile=profile.name,
                 target_config_hash=settings.target_config_hash_for(profile.name),
                 guardrail_blocked=output_decision.filtered,

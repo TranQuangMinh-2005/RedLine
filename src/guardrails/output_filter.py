@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import re
 from dataclasses import dataclass
 
@@ -34,6 +36,7 @@ _MOCK_CUSTOMER_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b09000000(\d{2})\b"),
     re.compile(r"\bDia chi gia lap (\d{2})\b", re.IGNORECASE),
 )
+_ENCODED_TOKEN_RE = re.compile(r"\b(?:[A-Za-z0-9+/]{16,}={0,2}|[0-9a-fA-F]{24,})\b")
 
 
 @dataclass(frozen=True)
@@ -65,6 +68,29 @@ def _contains_other_mock_customer(text: str, allowed_customer_id: str | None) ->
     )
 
 
+def _decoded_candidates(text: str) -> tuple[str, ...]:
+    decoded: list[str] = []
+    for token in _ENCODED_TOKEN_RE.findall(text):
+        attempts: list[bytes] = []
+        try:
+            attempts.append(base64.b64decode(token + "=" * (-len(token) % 4), validate=True))
+        except (ValueError, binascii.Error):
+            pass
+        if len(token) % 2 == 0:
+            try:
+                attempts.append(bytes.fromhex(token))
+            except ValueError:
+                pass
+        for raw in attempts:
+            try:
+                candidate = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+            if candidate:
+                decoded.append(candidate)
+    return tuple(decoded)
+
+
 def inspect_output(
     text: str,
     profile: DefenseProfile,
@@ -82,6 +108,12 @@ def inspect_output(
         )
 
     if profile.output_filter:
+        if any(_contains_canary(candidate, canary) for candidate in _decoded_candidates(text)):
+            return OutputDecision(
+                text=BLOCKED_OUTPUT_REPLY,
+                filtered=True,
+                actions=("output_block:encoded_canary",),
+            )
         if _contains_other_mock_customer(text, allowed_customer_id):
             return OutputDecision(
                 text=BLOCKED_OUTPUT_REPLY,

@@ -1,7 +1,8 @@
+import base64
+
 from src.guardrails.input_filter import inspect_input, inspect_messages
 from src.guardrails.output_filter import BLOCKED_OUTPUT_REPLY, inspect_output
 from src.guardrails.profiles import DefenseProfile
-
 
 NONE = DefenseProfile("none", False, False, False, False, False)
 BASIC = DefenseProfile("basic", True, False, True, True, False)
@@ -106,3 +107,15 @@ def test_strict_blocks_obfuscated_canary_and_active_content() -> None:
     assert canary.actions == ("output_block:canary",)
     assert active.filtered is True
     assert active.actions == ("output_block:active_content",)
+
+
+def test_strict_blocks_base64_encoded_canary_but_basic_does_not() -> None:
+    canary = "CANARY-CUSTOMER-TEST-123"
+    encoded = base64.b64encode(canary.encode()).decode()
+
+    basic = inspect_output(encoded, BASIC, canary=canary)
+    strict = inspect_output(encoded, STRICT, canary=canary)
+
+    assert basic.filtered is False
+    assert strict.filtered is True
+    assert strict.actions == ("output_block:encoded_canary",)

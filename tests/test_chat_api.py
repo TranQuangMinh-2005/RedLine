@@ -53,11 +53,35 @@ def test_chat_creates_a_session_and_returns_the_stable_contract(
         "latency_s",
         "total_tokens",
         "canary_leaked",
+        "raw_canary_detected",
+        "delivered_canary_detected",
         "defense_profile",
         "target_config_hash",
         "guardrail_blocked",
         "guardrail_actions",
     }
+
+
+def test_chat_preserves_raw_canary_evidence_when_output_is_blocked(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = chat_router.get_settings()
+    monkeypatch.setattr(settings, "CANARY_TOKEN", "CANARY-RAW-EVIDENCE-TEST")
+    monkeypatch.setattr(
+        chat_router.target_agent,
+        "respond",
+        lambda *_args, **_kwargs: _agent_result(f"raw {settings.CANARY_TOKEN}"),
+    )
+    client.post("/config/defense-profile", json={"profile": "strict"})
+
+    response = client.post("/chat", json={"message": "hello"})
+    payload = response.json()
+
+    assert payload["guardrail_blocked"] is True
+    assert payload["raw_canary_detected"] is True
+    assert payload["delivered_canary_detected"] is False
+    assert payload["canary_leaked"] is False
 
 
 def test_chat_passes_complete_history_on_turn_two(

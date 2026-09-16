@@ -54,7 +54,11 @@ def audit_event(event: str, *, request_id: str, session_id: str | None = None, *
         "request_id": request_id,
         "session_id_hash": session_hash(session_id) if session_id else None,
         "defense_profile": active_profile,
-        "target_config_hash": settings.target_config_hash,
+        "target_config_hash": getattr(
+            settings,
+            "target_config_hash_for",
+            lambda _profile: settings.target_config_hash,
+        )(active_profile),
         **fields,
     }
     logger = configure_logging()

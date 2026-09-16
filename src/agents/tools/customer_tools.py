@@ -42,10 +42,17 @@ class _borrowed_session:
         return False
 
 
-def get_customer_info(customer_id: str, *, session: Session | None = None) -> dict[str, Any]:
+def get_customer_info(
+    customer_id: str,
+    *,
+    authorized_customer_id: str | None = None,
+    session: Session | None = None,
+) -> dict[str, Any]:
     customer_id = customer_id.strip() if isinstance(customer_id, str) else ""
     if not customer_id or len(customer_id) > 40:
         return _result(status="invalid_input", error="customer_id is invalid")
+    if authorized_customer_id and customer_id != authorized_customer_id:
+        return _result(status="forbidden", error="customer access is not authorized")
     try:
         with _with_session(session) as db:
             customer = db.get(Customer, customer_id)
@@ -62,7 +69,12 @@ def get_customer_info(customer_id: str, *, session: Session | None = None) -> di
         return _result(status="tool_error", error="customer database unavailable")
 
 
-def get_ticket(ticket_id: str, *, session: Session | None = None) -> dict[str, Any]:
+def get_ticket(
+    ticket_id: str,
+    *,
+    authorized_customer_id: str | None = None,
+    session: Session | None = None,
+) -> dict[str, Any]:
     ticket_id = ticket_id.strip() if isinstance(ticket_id, str) else ""
     if not ticket_id or len(ticket_id) > 40:
         return _result(status="invalid_input", error="ticket_id is invalid")
@@ -71,6 +83,8 @@ def get_ticket(ticket_id: str, *, session: Session | None = None) -> dict[str, A
             ticket = db.get(Ticket, ticket_id)
             if ticket is None:
                 return _result(status="not_found", error="ticket not found")
+            if authorized_customer_id and ticket.customer_id != authorized_customer_id:
+                return _result(status="forbidden", error="ticket access is not authorized")
             return _result(data={
                 "id": ticket.id,
                 "customer_id": ticket.customer_id,
@@ -109,6 +123,7 @@ def create_ticket(
     description: str,
     request_id: str | None = None,
     *,
+    authorized_customer_id: str | None = None,
     session: Session | None = None,
 ) -> dict[str, Any]:
     customer_id = customer_id.strip() if isinstance(customer_id, str) else ""
@@ -117,6 +132,8 @@ def create_ticket(
     request_id = request_id.strip() if isinstance(request_id, str) else None
     if not customer_id or len(customer_id) > 40:
         return _result(status="invalid_input", error="customer_id is invalid")
+    if authorized_customer_id and customer_id != authorized_customer_id:
+        return _result(status="forbidden", error="customer access is not authorized")
     if not subject or len(subject) > MAX_SUBJECT_LENGTH:
         return _result(status="invalid_input", error="subject is invalid")
     if not description or len(description) > MAX_DESCRIPTION_LENGTH:
@@ -161,11 +178,18 @@ TOOL_DEFINITIONS = [
 ]
 
 
-def execute_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+def execute_tool(
+    name: str,
+    arguments: dict[str, Any],
+    *,
+    authorized_customer_id: str | None = None,
+) -> dict[str, Any]:
     function = TOOL_FUNCTIONS.get(name)
     if function is None:
         return _result(status="invalid_tool", error="tool is not allowlisted")
     try:
+        if authorized_customer_id and name in {"get_customer_info", "get_ticket", "create_ticket"}:
+            return function(**arguments, authorized_customer_id=authorized_customer_id)
         return function(**arguments)
     except TypeError:
         return _result(status="invalid_input", error="tool arguments are invalid")

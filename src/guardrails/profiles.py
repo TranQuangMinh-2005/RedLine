@@ -20,6 +20,7 @@ class DefenseProfile:
     output_filter: bool
     prompt_hardening: bool
     canary_check: bool
+    tool_authorization: bool
 
 
 @lru_cache(maxsize=1)
@@ -44,7 +45,13 @@ def get_defense_profile(name: str | None = None) -> DefenseProfile:
         raise ValueError(f"unknown DEFENSE_PROFILE={selected!r}; expected one of: {valid}")
 
     raw = config["profiles"].get(selected)
-    required = {"input_filter", "output_filter", "prompt_hardening", "canary_check"}
+    required = {
+        "input_filter",
+        "output_filter",
+        "prompt_hardening",
+        "canary_check",
+        "tool_authorization",
+    }
     if not isinstance(raw, dict) or set(raw) != required:
         raise RuntimeError(f"guardrail profile {selected!r} must define exactly {sorted(required)}")
     if any(not isinstance(raw[key], bool) for key in required):
@@ -56,4 +63,5 @@ def get_defense_profile(name: str | None = None) -> DefenseProfile:
         output_filter=raw["output_filter"],
         prompt_hardening=raw["prompt_hardening"],
         canary_check=raw["canary_check"],
+        tool_authorization=raw["tool_authorization"],
     )

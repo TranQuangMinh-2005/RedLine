@@ -6,15 +6,18 @@ profiles:
     output_filter: false
     prompt_hardening: false
     canary_check: false
+    tool_authorization: false
   basic:
     input_filter: true
     output_filter: false
     prompt_hardening: true
     canary_check: true
+    tool_authorization: false
   strict:
     input_filter: true
     output_filter: true
     prompt_hardening: true
     canary_check: true
+    tool_authorization: true
 
 active_profile: none

@@ -15,12 +15,13 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_input
+from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_messages
 from src.guardrails.output_filter import inspect_output
 from src.guardrails import state as defense_state
 from src.agents import target_agent
 from src.config import ExecutionMode, get_settings
 from src.logging_config import audit_event, reset_request_context, set_request_context
+from src.services.rate_limit import RateLimitExceeded, TokenBudgetExceeded, roe_budget
 
 router = APIRouter()
 
@@ -114,6 +115,14 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
     settings = get_settings()
     if settings.ROE_KILL_SWITCH:
         raise HTTPException(status_code=503, detail="kill-switch active")
+    try:
+        roe_budget.begin_request(
+            settings.SCENARIO_CUSTOMER_ID,
+            max_requests_per_minute=settings.ROE_MAX_REQUESTS_PER_MIN,
+            max_tokens_total=settings.ROE_MAX_TOKENS_TOTAL,
+        )
+    except (RateLimitExceeded, TokenBudgetExceeded) as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
 
     # Lọc lịch sử hội thoại
     chat_messages: list[dict[str, Any]] = []
@@ -142,22 +151,31 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
 
     try:
         # 1. Guardrail input
-        input_decision = inspect_input(last_user_message, profile)
+        input_decision = inspect_messages(chat_messages, profile)
         if input_decision.blocked:
             reply = BLOCKED_INPUT_REPLY
             total_tokens = 0
             model_name = req.model or settings.LLM_MODEL
             canary_leaked = False
             guardrail_blocked = True
+            guardrail_actions = list(input_decision.actions)
         else:
             # 2. Gọi RAG Target Agent
             result = target_agent.respond(chat_messages, defense_profile=profile, mode=req.mode)
-            output_decision = inspect_output(result["text"], profile, canary=settings.CANARY_TOKEN)
+            output_decision = inspect_output(
+                result["text"],
+                profile,
+                canary=settings.CANARY_TOKEN,
+                allowed_customer_id=settings.SCENARIO_CUSTOMER_ID,
+            )
             reply = output_decision.text
             total_tokens = int(result.get("total_tokens", 0))
             model_name = result.get("model", req.model or settings.LLM_MODEL)
             canary_leaked = target_agent.leaked_canary(reply)
             guardrail_blocked = output_decision.filtered
+            guardrail_actions = list(output_decision.actions)
+
+        roe_budget.record_tokens(settings.SCENARIO_CUSTOMER_ID, total_tokens)
 
         latency = round(time.monotonic() - started, 3)
         created_ts = int(time.time())
@@ -246,13 +264,14 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
                 "completion_tokens": max(1, total_tokens - (total_tokens // 2)),
                 "total_tokens": total_tokens,
             },
-            "system_fingerprint": settings.target_config_hash,
+            "system_fingerprint": settings.target_config_hash_for(profile.name),
             "redline": {
                 "mode": req.mode,
                 "session_id": session_id,
                 "canary_leaked": canary_leaked,
                 "defense_profile": profile.name,
                 "guardrail_blocked": guardrail_blocked,
+                "guardrail_actions": guardrail_actions,
                 "latency_s": latency,
             },
         }

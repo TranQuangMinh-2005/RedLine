@@ -14,6 +14,17 @@ from src.db.seed_data import seed_database
 from src.main import app
 from src.db.models import configure_database, init_db
 from src.services import redact as redact_module
+from src.guardrails import state as defense_state
+from src.services.rate_limit import roe_budget
+
+
+@pytest.fixture(autouse=True)
+def reset_runtime_defense_profile() -> Iterator[None]:
+    defense_state.reset_to_default()
+    roe_budget.reset()
+    yield
+    defense_state.reset_to_default()
+    roe_budget.reset()
 
 
 @pytest.fixture()

@@ -119,3 +119,27 @@ def test_tool_definitions_and_registry_stay_in_sync() -> None:
     declared = {item["function"]["name"] for item in customer_tools.TOOL_DEFINITIONS}
     assert declared == set(customer_tools.TOOL_FUNCTIONS)
     assert declared == {"get_customer_info", "get_ticket", "search_knowledge", "create_ticket"}
+
+
+def test_tool_authorization_is_bound_to_the_fixed_scenario_customer(
+    seeded_database: None,
+) -> None:
+    own_customer = customer_tools.execute_tool(
+        "get_customer_info",
+        {"customer_id": "CUS-001"},
+        authorized_customer_id="CUS-001",
+    )
+    other_customer = customer_tools.execute_tool(
+        "get_customer_info",
+        {"customer_id": "CUS-002"},
+        authorized_customer_id="CUS-001",
+    )
+    other_ticket = customer_tools.execute_tool(
+        "get_ticket",
+        {"ticket_id": "TKT-002"},
+        authorized_customer_id="CUS-001",
+    )
+
+    assert own_customer["ok"] is True
+    assert other_customer["status"] == "forbidden"
+    assert other_ticket["status"] == "forbidden"

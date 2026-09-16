@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import re
 import unicodedata
 from dataclasses import dataclass
+from typing import Any
 
 from src.guardrails.profiles import DefenseProfile
 
@@ -61,6 +64,23 @@ _STRICT_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
             re.IGNORECASE | re.DOTALL,
         ),
     ),
+    (
+        "obfuscated_instruction_override",
+        re.compile(
+            r"\bi[\W_]*g[\W_]*n[\W_]*o[\W_]*r[\W_]*e\b.{0,80}"
+            r"\b(previous|prior|instructions?|rules?)\b",
+            re.IGNORECASE | re.DOTALL,
+        ),
+    ),
+    (
+        "implicit_prompt_extraction",
+        re.compile(
+            r"\b(exact|verbatim|word[- ]for[- ]word)\b.{0,50}"
+            r"\b(text|words?|content)\b.{0,50}"
+            r"\b(initiali[sz]ed|configured|governs?|controls?)\b",
+            re.IGNORECASE | re.DOTALL,
+        ),
+    ),
 )
 
 
@@ -71,7 +91,36 @@ class InputDecision:
 
 
 def _normalize(text: str) -> str:
-    return unicodedata.normalize("NFKC", text).casefold()
+    normalized = unicodedata.normalize("NFKC", text).casefold()
+    # Format controls such as zero-width joiners are a common regex bypass.
+    return "".join(char for char in normalized if unicodedata.category(char) != "Cf")
+
+
+_ENCODED_TOKEN_RE = re.compile(r"\b(?:[A-Za-z0-9+/]{16,}={0,2}|[0-9a-fA-F]{24,})\b")
+
+
+def _decoded_candidates(text: str) -> tuple[str, ...]:
+    """Best-effort decode of standalone Base64/hex payloads for strict inspection."""
+    decoded: list[str] = []
+    for token in _ENCODED_TOKEN_RE.findall(text):
+        attempts: list[bytes] = []
+        try:
+            attempts.append(base64.b64decode(token + "=" * (-len(token) % 4), validate=True))
+        except (ValueError, binascii.Error):
+            pass
+        if len(token) % 2 == 0:
+            try:
+                attempts.append(bytes.fromhex(token))
+            except ValueError:
+                pass
+        for raw in attempts:
+            try:
+                candidate = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+            if candidate and sum(char.isprintable() for char in candidate) / len(candidate) >= 0.9:
+                decoded.append(candidate)
+    return tuple(decoded)
 
 
 def inspect_input(text: str, profile: DefenseProfile) -> InputDecision:
@@ -80,9 +129,23 @@ def inspect_input(text: str, profile: DefenseProfile) -> InputDecision:
     if not profile.input_filter:
         return InputDecision(blocked=False)
 
-    normalized = _normalize(text)
+    candidates = [_normalize(text)]
+    if profile.name == "strict":
+        candidates.extend(_normalize(candidate) for candidate in _decoded_candidates(text))
     rules = _BASIC_RULES + (_STRICT_RULES if profile.name == "strict" else ())
-    for rule_name, pattern in rules:
-        if pattern.search(normalized):
-            return InputDecision(blocked=True, actions=(f"input_block:{rule_name}",))
+    for candidate in candidates:
+        for rule_name, pattern in rules:
+            if pattern.search(candidate):
+                return InputDecision(blocked=True, actions=(f"input_block:{rule_name}",))
+    return InputDecision(blocked=False)
+
+
+def inspect_messages(messages: list[dict[str, Any]], profile: DefenseProfile) -> InputDecision:
+    """Inspect every user turn so an older poisoned turn cannot bypass the current mode."""
+    for message in messages:
+        if message.get("role") != "user":
+            continue
+        decision = inspect_input(str(message.get("content") or ""), profile)
+        if decision.blocked:
+            return decision
     return InputDecision(blocked=False)

@@ -44,7 +44,8 @@ def health() -> dict:
         "status": "ok",
         "time": time.time(),
         "defense_profile": active,
-        "target_config_hash": settings.target_config_hash,
+        "target_config_hash": settings.target_config_hash_for(active),
+        "scenario_customer_id": settings.SCENARIO_CUSTOMER_ID,
     }
 
 

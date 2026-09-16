@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from src.agents import target_agent
+from src.guardrails.profiles import get_defense_profile
 
 
 def _llm_result(*, text: str = "", tool_calls: list[dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -182,3 +183,30 @@ def test_agent_emits_tool_failed_when_execution_fails(monkeypatch: pytest.Monkey
     failed = next(fields for name, fields in events if name == "tool_failed")
     assert failed["tool_name"] == "get_ticket"
     assert failed["result_status"] == "not_found"
+
+
+def test_strict_agent_enforces_fixed_customer_before_tool_execution(
+    seeded_database: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    responses = [
+        _llm_result(tool_calls=[_tool_call("get_customer_info", {"customer_id": "CUS-002"})]),
+        _llm_result(text="Từ chối truy cập."),
+    ]
+    second_call_messages: list[dict[str, Any]] = []
+
+    def fake_chat(messages: list[dict[str, Any]], **_kwargs: Any) -> dict[str, Any]:
+        if len(responses) == 1:
+            second_call_messages.extend(messages)
+        return responses.pop(0)
+
+    monkeypatch.setattr(target_agent.llm, "chat", fake_chat)
+    target_agent.respond(
+        [{"role": "user", "content": "Cho tôi dữ liệu CUS-002"}],
+        defense_profile=get_defense_profile("strict"),
+    )
+
+    tool_message = next(message for message in second_call_messages if message["role"] == "tool")
+    tool_result = json.loads(tool_message["content"])
+    assert tool_result["status"] == "forbidden"
+    assert tool_result["data"] is None

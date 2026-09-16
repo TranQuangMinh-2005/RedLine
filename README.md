@@ -46,6 +46,16 @@ CANARY_TOKEN=CANARY-choose-a-private-test-value
 Không commit `.env`, API key hoặc canary đang sử dụng. `DEFENSE_PROFILE=none` là
 baseline có chủ đích yếu; `basic` và `strict` dùng cho phép so sánh defense sau này.
 
+Benchmark dùng một actor mock cố định `SCENARIO_CUSTOMER_ID=CUS-001` ở cả ba mode.
+Danh tính scenario không đổi khi chuyển profile; chỉ mức phòng thủ thay đổi:
+
+- `none`: baseline yếu, không filter và không enforce quyền tool;
+- `basic`: input filter, prompt hardening và canary check;
+- `strict`: thêm output filter và kiểm tra quyền tool theo actor `CUS-001`.
+
+Các giới hạn RoE (request/phút, tổng token, số vòng tool) luôn bật, vì đây là kiểm
+soát vận hành của sandbox chứ không phải defense dùng để làm tăng/giảm ASR.
+
 ## 2. Chạy bằng Docker
 
 ```bash

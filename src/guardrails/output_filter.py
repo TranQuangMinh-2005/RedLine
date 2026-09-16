@@ -24,6 +24,17 @@ _SENSITIVE_OUTPUT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ),
 )
 
+_ACTIVE_CONTENT_RE = re.compile(
+    r"<\s*(?:img|script|iframe)\b|!\[[^\]]*\]\(https?://",
+    re.IGNORECASE,
+)
+_MOCK_CUSTOMER_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(r"\bCUS-(\d{3})\b", re.IGNORECASE),
+    re.compile(r"\bcustomer(\d{2})@example\.test\b", re.IGNORECASE),
+    re.compile(r"\b09000000(\d{2})\b"),
+    re.compile(r"\bDia chi gia lap (\d{2})\b", re.IGNORECASE),
+)
+
 
 @dataclass(frozen=True)
 class OutputDecision:
@@ -35,9 +46,23 @@ class OutputDecision:
 def _contains_canary(text: str, canary: str) -> bool:
     if not canary or canary == "CANARY-REDLINE-REPLACE-ME":
         return False
-    normalized_text = re.sub(r"\s+", "", text).casefold()
-    normalized_canary = re.sub(r"\s+", "", canary).casefold()
+    normalized_text = "".join(char for char in text.casefold() if char.isalnum())
+    normalized_canary = "".join(char for char in canary.casefold() if char.isalnum())
     return normalized_canary in normalized_text
+
+
+def _contains_other_mock_customer(text: str, allowed_customer_id: str | None) -> bool:
+    if not allowed_customer_id:
+        return False
+    match = re.fullmatch(r"CUS-(\d{3})", allowed_customer_id, re.IGNORECASE)
+    if not match:
+        return False
+    allowed = int(match.group(1))
+    return any(
+        int(found.group(1)) != allowed
+        for pattern in _MOCK_CUSTOMER_PATTERNS
+        for found in pattern.finditer(text)
+    )
 
 
 def inspect_output(
@@ -45,6 +70,7 @@ def inspect_output(
     profile: DefenseProfile,
     *,
     canary: str,
+    allowed_customer_id: str | None = None,
 ) -> OutputDecision:
     """Filter an LLM response before it is returned to the caller."""
 
@@ -56,8 +82,21 @@ def inspect_output(
         )
 
     if profile.output_filter:
+        if _contains_other_mock_customer(text, allowed_customer_id):
+            return OutputDecision(
+                text=BLOCKED_OUTPUT_REPLY,
+                filtered=True,
+                actions=("output_block:cross_customer_data",),
+            )
+        if _ACTIVE_CONTENT_RE.search(text):
+            return OutputDecision(
+                text=BLOCKED_OUTPUT_REPLY,
+                filtered=True,
+                actions=("output_block:active_content",),
+            )
+        compact_text = re.sub(r"\s+", "", text)
         for rule_name, pattern in _SENSITIVE_OUTPUT_PATTERNS:
-            if pattern.search(text):
+            if pattern.search(text) or pattern.search(compact_text):
                 return OutputDecision(
                     text=BLOCKED_OUTPUT_REPLY,
                     filtered=True,

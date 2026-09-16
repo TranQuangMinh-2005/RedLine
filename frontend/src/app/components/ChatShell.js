@@ -69,6 +69,7 @@ export default function ChatShell({ apiBase = '/api' }) {
   const [mascotState, setMascotState] = useState('idle')
   const [profile, setProfile] = useState('none')
   const [profileOptions, setProfileOptions] = useState([])
+  const [scenarioCustomerId, setScenarioCustomerId] = useState('CUS-001')
   const [switching, setSwitching] = useState(false)
   const [configHash, setConfigHash] = useState('')
   const [busy, setBusy] = useState(false)
@@ -120,6 +121,7 @@ export default function ChatShell({ apiBase = '/api' }) {
       .then((d) => {
         if (d.defense_profile) setProfile(d.defense_profile)
         if (d.target_config_hash) setConfigHash(d.target_config_hash)
+        if (d.scenario_customer_id) setScenarioCustomerId(d.scenario_customer_id)
       })
       .catch(() => { /* backend chưa lên */ })
 
@@ -128,6 +130,7 @@ export default function ChatShell({ apiBase = '/api' }) {
       .then((d) => {
         if (d.active) setProfile(d.active)
         if (d.target_config_hash) setConfigHash(d.target_config_hash)
+        if (d.scenario_customer_id) setScenarioCustomerId(d.scenario_customer_id)
         if (Array.isArray(d.options)) setProfileOptions(d.options)
       })
       .catch(() => { /* chưa có endpoint — bỏ qua */ })
@@ -636,7 +639,7 @@ export default function ChatShell({ apiBase = '/api' }) {
 
               <p className="text-[9px] leading-snug text-ink-400">
                 {profile === 'strict'
-                  ? 'Chặn input + lọc output + canary check'
+                  ? `Chặn input/output + khóa tool cho ${scenarioCustomerId}`
                   : profile === 'basic'
                     ? 'Chặn input + canary check'
                     : 'Không phòng thủ — đo lỗ hổng nguyên bản'}

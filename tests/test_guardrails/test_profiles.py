@@ -4,11 +4,18 @@ from src.guardrails.profiles import get_defense_profile
 
 
 @pytest.mark.parametrize(
-    ("name", "input_filter", "output_filter", "prompt_hardening", "canary_check"),
+    (
+        "name",
+        "input_filter",
+        "output_filter",
+        "prompt_hardening",
+        "canary_check",
+        "tool_authorization",
+    ),
     [
-        ("none", False, False, False, False),
-        ("basic", True, False, True, True),
-        ("strict", True, True, True, True),
+        ("none", False, False, False, False, False),
+        ("basic", True, False, True, True, False),
+        ("strict", True, True, True, True, True),
     ],
 )
 def test_profile_flags(
@@ -17,12 +24,14 @@ def test_profile_flags(
     output_filter: bool,
     prompt_hardening: bool,
     canary_check: bool,
+    tool_authorization: bool,
 ) -> None:
     profile = get_defense_profile(name)
     assert profile.input_filter is input_filter
     assert profile.output_filter is output_filter
     assert profile.prompt_hardening is prompt_hardening
     assert profile.canary_check is canary_check
+    assert profile.tool_authorization is tool_authorization
 
 
 def test_unknown_profile_is_rejected() -> None:

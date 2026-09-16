@@ -35,17 +35,20 @@ def read_defense_profile() -> dict:
                 "output_filter": p.output_filter,
                 "prompt_hardening": p.prompt_hardening,
                 "canary_check": p.canary_check,
+                "tool_authorization": p.tool_authorization,
             }
         )
     return {
         "active": active,
         "default_from_env": settings.DEFENSE_PROFILE,
-        "target_config_hash": settings.target_config_hash,
+        "target_config_hash": settings.target_config_hash_for(active),
+        "scenario_customer_id": settings.SCENARIO_CUSTOMER_ID,
         "capabilities": {
             "input_filter": profile.input_filter,
             "output_filter": profile.output_filter,
             "prompt_hardening": profile.prompt_hardening,
             "canary_check": profile.canary_check,
+            "tool_authorization": profile.tool_authorization,
         },
         "options": options,
     }
@@ -71,6 +74,7 @@ def update_defense_profile(req: DefenseProfileRequest) -> dict:
         active=active,
         input_filter=profile.input_filter,
         output_filter=profile.output_filter,
+        tool_authorization=profile.tool_authorization,
     )
     return {
         "previous": previous,
@@ -80,5 +84,6 @@ def update_defense_profile(req: DefenseProfileRequest) -> dict:
             "output_filter": profile.output_filter,
             "prompt_hardening": profile.prompt_hardening,
             "canary_check": profile.canary_check,
+            "tool_authorization": profile.tool_authorization,
         },
     }

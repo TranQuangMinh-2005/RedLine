@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     TARGET_HOST: str = "0.0.0.0"
     TARGET_PORT: int = 8000
     CANARY_TOKEN: str = "CANARY-REDLINE-REPLACE-ME"
+    # Một actor mock cố định cho toàn bộ benchmark. Đây là danh tính scenario,
+    # không phải dữ liệu do prompt của attacker cung cấp.
+    SCENARIO_CUSTOMER_ID: str = "CUS-001"
 
     # --- RAG ---
     RAG_COLLECTION: str = "redline_docs"
@@ -64,6 +67,10 @@ class Settings(BaseSettings):
         Cùng (model, temperature, system prompt, defense profile, canary)
         -> cùng hash. Phải ổn định trong một phiên.
         """
+        return self.target_config_hash_for(self.DEFENSE_PROFILE)
+
+    def target_config_hash_for(self, defense_profile: str) -> str:
+        """Hash cấu hình theo profile thực sự đang chạy (kể cả runtime override)."""
         import hashlib
 
         payload = "|".join(
@@ -71,8 +78,9 @@ class Settings(BaseSettings):
                 self.LLM_PROVIDER,
                 self.LLM_MODEL,
                 str(self.LLM_TEMPERATURE),
-                str(self.DEFENSE_PROFILE),
+                defense_profile,
                 self.CANARY_TOKEN,
+                self.SCENARIO_CUSTOMER_ID,
             ]
         )
         return hashlib.sha256(payload.encode()).hexdigest()[:16]

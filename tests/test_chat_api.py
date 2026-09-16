@@ -47,6 +47,7 @@ def test_chat_creates_a_session_and_returns_the_stable_contract(
     assert payload["model"] == "mock-model"
     assert payload["total_tokens"] == 7
     assert set(payload) == {
+        "mode",
         "session_id",
         "reply",
         "model",

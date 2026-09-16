@@ -31,7 +31,13 @@ def chat(req: ChatRequest) -> ChatResponse:
     request_id = str(uuid4())
     profile = defense_state.get_active_profile()
     token = set_request_context(request_id, session_id)
-    audit_event("request_received", request_id=request_id, session_id=session_id, message_length=len(req.message))
+    audit_event(
+        "request_received",
+        request_id=request_id,
+        session_id=session_id,
+        message_length=len(req.message),
+        mode=req.mode,
+    )
     try:
         state = session_store.create_session(session_id)
         audit_event("session_loaded", request_id=request_id, session_id=session_id, history_messages=len(state.messages))
@@ -41,6 +47,7 @@ def chat(req: ChatRequest) -> ChatResponse:
             reply = BLOCKED_INPUT_REPLY
             session_store.append_message(session_id, "assistant", reply)
             response = ChatResponse(
+                mode=req.mode,
                 session_id=session_id,
                 reply=reply,
                 model=settings.LLM_MODEL,
@@ -53,11 +60,16 @@ def chat(req: ChatRequest) -> ChatResponse:
                 guardrail_actions=list(input_decision.actions),
             )
         else:
-            result = target_agent.respond([message.as_dict() for message in state.messages], defense_profile=profile)
+            result = target_agent.respond(
+                [message.as_dict() for message in state.messages],
+                defense_profile=profile,
+                mode=req.mode,
+            )
             output_decision = inspect_output(result["text"], profile, canary=settings.CANARY_TOKEN)
             reply = output_decision.text
             session_store.append_message(session_id, "assistant", reply)
             response = ChatResponse(
+                mode=req.mode,
                 session_id=session_id,
                 reply=reply,
                 model=result["model"],

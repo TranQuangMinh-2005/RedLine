@@ -29,6 +29,18 @@ const QUICK_REPLIES = [
   'Tạo ticket hỗ trợ',
 ]
 
+const LLM_QUICK_REPLIES = [
+  'Giải thích sự khác nhau giữa đổi hàng và hoàn tiền',
+  'Tôi nên chuẩn bị gì khi liên hệ hỗ trợ?',
+  'Giúp tôi viết yêu cầu hỗ trợ đơn hàng',
+  'Tóm tắt nội dung tôi cung cấp',
+]
+
+const MODES = [
+  { value: 'agent', label: 'Agent', description: 'Tra cứu tài liệu, dữ liệu khách hàng và tạo ticket.' },
+  { value: 'llm', label: 'LLM thuần', description: 'Trò chuyện trực tiếp với model, không dùng công cụ.' },
+]
+
 const MIN_LAUNCH_MS = 900 // giữ mascot "searching" tối thiểu để thấy hiệu ứng
 const STORAGE_KEY = 'redline.chat.sessions.v1'
 
@@ -61,6 +73,7 @@ export default function ChatShell({ apiBase = '/api' }) {
   const [messages, setMessages] = useState([])
   const [serverSessionId, setServerSessionId] = useState(null)
   const [localSessionId, setLocalSessionId] = useState(() => newSessionId())
+  const [mode, setMode] = useState('agent')
 
   // ===== Lịch sử các phiên (lưu localStorage) =====
   const [sessions, setSessions] = useState([])
@@ -162,6 +175,7 @@ export default function ChatShell({ apiBase = '/api' }) {
     const entry = {
       id: localSessionId,
       serverId: sid,
+      mode,
       title: deriveTitle(msgs),
       updatedAt: Date.now(),
       count: msgs.length,
@@ -175,7 +189,7 @@ export default function ChatShell({ apiBase = '/api' }) {
       } catch { /* bỏ qua */ }
       return next
     })
-  }, [localSessionId])
+  }, [localSessionId, mode])
 
   const sendMessage = useCallback(async (raw) => {
     const text = (raw ?? input).trim()
@@ -194,7 +208,7 @@ export default function ChatShell({ apiBase = '/api' }) {
       const res = await fetch(`${apiBase}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, session_id: serverSessionId ?? undefined }),
+        body: JSON.stringify({ message: text, session_id: serverSessionId ?? undefined, mode }),
       })
       const data = await res.json().catch(() => ({ detail: 'Phản hồi không hợp lệ từ server' }))
       if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`)
@@ -234,38 +248,50 @@ export default function ChatShell({ apiBase = '/api' }) {
     } finally {
       setBusy(false)
     }
-  }, [input, busy, messages, serverSessionId, apiBase, syncCurrentSession])
+  }, [input, busy, messages, serverSessionId, apiBase, syncCurrentSession, mode])
 
   /** Bắt đầu phiên mới (không xoá lịch sử). */
   const startNewSession = useCallback(() => {
+    if (busy) return
     setMessages([])
     setServerSessionId(null)
     setLocalSessionId(newSessionId())
     setError(null)
     setMascotState('idle')
     setHistoryOpen(false)
-  }, [])
+  }, [busy])
+
+  const switchMode = useCallback((nextMode) => {
+    if (busy || nextMode === mode) return
+    startNewSession()
+    setInput('')
+    setMode(nextMode)
+  }, [busy, mode, startNewSession])
 
   /** Mở lại một phiên từ lịch sử. */
   const openSession = useCallback((s) => {
+    if (busy) return
+    setMode(s.mode === 'llm' ? 'llm' : 'agent')
     setMessages(s.messages || [])
     setServerSessionId(s.serverId ?? null)
     setLocalSessionId(s.id)
     setError(null)
     setMascotState('idle')
     setHistoryOpen(false)
-  }, [])
+  }, [busy])
 
   const deleteSession = useCallback((e, id) => {
     e.stopPropagation()
+    if (busy) return
     persist(sessions.filter((s) => s.id !== id))
     if (id === localSessionId) startNewSession()
-  }, [sessions, persist, localSessionId, startNewSession])
+  }, [sessions, persist, localSessionId, startNewSession, busy])
 
   const clearAll = useCallback(() => {
+    if (busy) return
     persist([])
     startNewSession()
-  }, [persist, startNewSession])
+  }, [persist, startNewSession, busy])
 
   const historyList = useMemo(
     () => [...sessions].sort((a, b) => b.updatedAt - a.updatedAt),
@@ -327,6 +353,33 @@ export default function ChatShell({ apiBase = '/api' }) {
             historyOpen ? 'absolute inset-x-3 top-16 z-30 flex' : 'hidden'
           } max-h-[70dvh] w-auto shrink-0 flex-col overflow-hidden rounded-3xl border border-ink-200 bg-white shadow-lg lg:relative lg:inset-auto lg:z-auto lg:flex lg:max-h-none lg:w-64 lg:bg-white/70 lg:shadow-none lg:backdrop-blur-sm`}
         >
+          <div className="shrink-0 space-y-2 border-b border-ink-100 p-4">
+            <p id="execution-mode-label" className="text-[11px] font-semibold uppercase tracking-wide text-ink-400">
+              Chế độ trò chuyện
+            </p>
+            <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="execution-mode-label">
+              {MODES.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={mode === option.value}
+                  disabled={busy}
+                  onClick={() => switchMode(option.value)}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition disabled:opacity-50 ${
+                    mode === option.value
+                      ? 'bg-brand-500 text-white shadow-sm'
+                      : 'bg-ink-100 text-ink-500 hover:bg-brand-100 hover:text-brand-700'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] leading-relaxed text-ink-400">
+              {MODES.find((option) => option.value === mode)?.description}
+            </p>
+            <p className="text-[10px] text-ink-400">Đổi chế độ sẽ mở hội thoại mới.</p>
+          </div>
           <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
             <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-400">
               <Clock size={13} weight="duotone" />
@@ -375,6 +428,8 @@ export default function ChatShell({ apiBase = '/api' }) {
                       <span>{timeAgo(s.updatedAt)}</span>
                       <span className="text-ink-300">·</span>
                       <span>{s.count} tin</span>
+                      <span className="text-ink-300">·</span>
+                      <span>{s.mode === 'llm' ? 'LLM thuần' : 'Agent'}</span>
                     </span>
                   </span>
                   <span
@@ -422,6 +477,8 @@ export default function ChatShell({ apiBase = '/api' }) {
                   />
                   {busy ? 'Đang trả lời...' : 'Trực tuyến'}
                   <span className="text-ink-300">·</span>
+                  <span>{mode === 'llm' ? 'LLM thuần' : 'Agent'}</span>
+                  <span className="text-ink-300">·</span>
                   <span className="font-mono">{profile}</span>
                 </p>
               </div>
@@ -452,11 +509,13 @@ export default function ChatShell({ apiBase = '/api' }) {
                 <div className="max-w-md text-center">
                   <h1 className="text-lg font-semibold tracking-tight text-ink-800">Xin chào! Tôi có thể giúp gì cho bạn?</h1>
                   <p className="mt-1.5 text-sm leading-relaxed text-ink-400">
-                    Hỏi về vận chuyển, đổi trả, đơn hàng, tài khoản hay chính sách ShopeeFood.
+                    {mode === 'llm'
+                      ? 'Trò chuyện, giải thích hoặc soạn nội dung. Chế độ này không tra cứu dữ liệu hay tạo ticket.'
+                      : 'Hỏi về vận chuyển, đổi trả, đơn hàng, tài khoản hay chính sách ShopeeFood.'}
                   </p>
                 </div>
                 <div className="grid w-full max-w-md grid-cols-1 gap-2 sm:grid-cols-2">
-                  {QUICK_REPLIES.map((q) => (
+                  {(mode === 'llm' ? LLM_QUICK_REPLIES : QUICK_REPLIES).map((q) => (
                     <button
                       key={q}
                       onClick={() => sendMessage(q)}
@@ -574,12 +633,12 @@ export default function ChatShell({ apiBase = '/api' }) {
                     mascotState === 'searching' ? 'bg-amber-500' : mascotState === 'success' ? 'bg-emerald-500' : 'bg-brand-500'
                   }`}
                 />
-                {mascotState === 'searching' ? 'Đang tìm kiếm' : mascotState === 'success' ? 'Đã trả lời' : 'Sẵn sàng'}
+                {mascotState === 'searching' ? 'Đang xử lý' : mascotState === 'success' ? 'Đã trả lời' : 'Sẵn sàng'}
               </span>
 
               <p className="min-h-[32px] px-1 text-[11px] leading-relaxed text-ink-400">
                 {mascotState === 'searching'
-                  ? 'Assistant đang tra cứu tài liệu và gọi model...'
+                  ? (mode === 'llm' ? 'Model đang soạn câu trả lời...' : 'Assistant đang xử lý yêu cầu và tra cứu khi cần...')
                   : mascotState === 'success'
                     ? 'Đã tìm thấy câu trả lời phù hợp.'
                     : 'Hỏi tôi về chính sách, đơn hàng hoặc tài khoản.'}

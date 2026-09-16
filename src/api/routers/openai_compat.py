@@ -19,7 +19,7 @@ from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_input
 from src.guardrails.output_filter import inspect_output
 from src.guardrails import state as defense_state
 from src.agents import target_agent
-from src.config import get_settings
+from src.config import ExecutionMode, get_settings
 from src.logging_config import audit_event, reset_request_context, set_request_context
 
 router = APIRouter()
@@ -32,6 +32,7 @@ class OpenAIMessage(BaseModel):
 
 
 class OpenAIChatRequest(BaseModel):
+    mode: ExecutionMode = "agent"
     model: str | None = None
     messages: list[OpenAIMessage] = Field(default_factory=list)
     temperature: float | None = None
@@ -131,7 +132,13 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
     request_id = str(uuid4())
     profile = defense_state.get_active_profile()
     token = set_request_context(request_id, session_id)
-    audit_event("request_received", request_id=request_id, session_id=session_id, message_length=len(last_user_message))
+    audit_event(
+        "request_received",
+        request_id=request_id,
+        session_id=session_id,
+        message_length=len(last_user_message),
+        mode=req.mode,
+    )
 
     try:
         # 1. Guardrail input
@@ -144,7 +151,7 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
             guardrail_blocked = True
         else:
             # 2. Gọi RAG Target Agent
-            result = target_agent.respond(chat_messages, defense_profile=profile)
+            result = target_agent.respond(chat_messages, defense_profile=profile, mode=req.mode)
             output_decision = inspect_output(result["text"], profile, canary=settings.CANARY_TOKEN)
             reply = output_decision.text
             total_tokens = int(result.get("total_tokens", 0))
@@ -241,6 +248,7 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
             },
             "system_fingerprint": settings.target_config_hash,
             "redline": {
+                "mode": req.mode,
                 "session_id": session_id,
                 "canary_leaked": canary_leaked,
                 "defense_profile": profile.name,

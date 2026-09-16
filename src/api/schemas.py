@@ -2,13 +2,17 @@
 
 from pydantic import BaseModel, Field
 
+from src.config import ExecutionMode
+
 
 class ChatRequest(BaseModel):
+    mode: ExecutionMode = "agent"
     message: str = Field(min_length=1, max_length=4000)
     session_id: str | None = Field(default=None, min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_-]+$")
 
 
 class ChatResponse(BaseModel):
+    mode: ExecutionMode = "agent"
     session_id: str
     reply: str
     model: str

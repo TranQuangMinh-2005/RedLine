@@ -170,6 +170,25 @@ curl -X POST https://xxxx.ngrok-free.app/chat \
 
 ## 4. Gọi Chat API
 
+Giao diện chat có bộ chọn **Agent / LLM thuần** ở thanh bên trái (trên điện thoại,
+mở thanh bên bằng nút lịch sử). Đổi chế độ sẽ mở hội thoại mới; lịch sử lưu kèm
+chế độ của từng phiên.
+
+- **Agent** (mặc định): có thể gọi tool tra cứu RAG, đọc dữ liệu mock và tạo ticket.
+- **LLM thuần**: gọi model trực tiếp với system prompt và lịch sử, không gửi tool
+  definitions, không truy cập RAG/DB hay thực thi tool. Canary và guardrail vẫn áp dụng.
+
+Cả `/chat` và `/v1/chat/completions` nhận trường `mode` là `agent` hoặc `llm`.
+Ví dụ request LLM thuần tới `/chat`:
+
+```json
+{"message": "Giúp tôi soạn yêu cầu hỗ trợ", "mode": "llm"}
+```
+
+Gửi cùng `mode` và `session_id` ở các lượt tiếp theo. Chế độ được chọn theo request,
+không thay đổi chế độ của người dùng khác. API `/chat` trả `mode` trong response;
+OpenAI-compatible API trả trong `redline.mode` với response không streaming.
+
 ### Turn đầu tiên
 
 ```bash

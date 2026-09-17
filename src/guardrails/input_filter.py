@@ -6,7 +6,7 @@ import base64
 import binascii
 import re
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from src.guardrails.profiles import DefenseProfile
@@ -88,6 +88,11 @@ _STRICT_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
 class InputDecision:
     blocked: bool
     actions: tuple[str, ...] = ()
+    # Chi tiết cho trace/UI; không ảnh hưởng quyết định chặn.
+    rule: str | None = None
+    matched_text: str | None = None
+    decoded: bool = False
+    turn_index: int | None = None
 
 
 def _normalize(text: str) -> str:
@@ -133,19 +138,26 @@ def inspect_input(text: str, profile: DefenseProfile) -> InputDecision:
     if profile.name == "strict":
         candidates.extend(_normalize(candidate) for candidate in _decoded_candidates(text))
     rules = _BASIC_RULES + (_STRICT_RULES if profile.name == "strict" else ())
-    for candidate in candidates:
+    for index, candidate in enumerate(candidates):
         for rule_name, pattern in rules:
-            if pattern.search(candidate):
-                return InputDecision(blocked=True, actions=(f"input_block:{rule_name}",))
+            match = pattern.search(candidate)
+            if match:
+                return InputDecision(
+                    blocked=True,
+                    actions=(f"input_block:{rule_name}",),
+                    rule=rule_name,
+                    matched_text=match.group(0)[:200],
+                    decoded=index > 0,
+                )
     return InputDecision(blocked=False)
 
 
 def inspect_messages(messages: list[dict[str, Any]], profile: DefenseProfile) -> InputDecision:
     """Inspect every user turn so an older poisoned turn cannot bypass the current mode."""
-    for message in messages:
+    for index, message in enumerate(messages):
         if message.get("role") != "user":
             continue
         decision = inspect_input(str(message.get("content") or ""), profile)
         if decision.blocked:
-            return decision
+            return replace(decision, turn_index=index)
     return InputDecision(blocked=False)

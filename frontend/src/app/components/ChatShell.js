@@ -15,11 +15,18 @@ import {
   Clock,
   Sparkle,
   Copy,
+  Path,
+  Eye,
+  ShieldPlus,
+  ShieldWarning,
 } from '@phosphor-icons/react'
 
 import HomeMatchMascot from './_shared/HomeMatchMascot'
 import MarkdownMessage from './MarkdownMessage'
 import ModelPanel, { ModelSummary } from './ModelPanel'
+import TraceDrawer, { TraceBadge } from './GuardrailTrace'
+import GuardrailRules from './GuardrailRules'
+import { GUARDS, GuardHeaderButton, GuardSwitchRow, useGuardToggle } from './GuardToggles'
 
 gsap.registerPlugin(useGSAP)
 
@@ -44,6 +51,22 @@ const MODES = [
 
 const MIN_LAUNCH_MS = 900 // giữ mascot "searching" tối thiểu để thấy hiệu ứng
 const STORAGE_KEY = 'redline.chat.sessions.v1'
+const TRACE_KEY = 'redline.trace.enabled'
+
+/** Lưu lịch sử; nếu vượt quota thì bỏ trace (lớn) và thử lại. */
+function saveSessions(next) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    try {
+      const slim = next.map((s) => ({
+        ...s,
+        messages: s.messages.map((m) => (m.meta?.trace ? { ...m, meta: { ...m.meta, trace: undefined } } : m)),
+      }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(slim))
+    } catch { /* hết quota — bỏ qua */ }
+  }
+}
 
 /** Sinh id ngắn cho phiên chat (client-side). */
 function newSessionId() {
@@ -91,6 +114,10 @@ export default function ChatShell({ apiBase = '/api' }) {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [modelOpen, setModelOpen] = useState(false)
   const [llmActive, setLlmActive] = useState(null)
+  const [guardHealth, setGuardHealth] = useState({})
+  const [traceOn, setTraceOn] = useState(true)
+  const [traceView, setTraceView] = useState(null)
+  const [rules, setRules] = useState({ open: false, focus: null })
 
   const scrollRef = useRef(null)
   const rootRef = useRef(null)
@@ -114,14 +141,38 @@ export default function ChatShell({ apiBase = '/api' }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) setSessions(JSON.parse(raw))
+      const trace = localStorage.getItem(TRACE_KEY)
+      if (trace !== null) setTraceOn(trace === '1')
     } catch { /* localStorage hỏng — bỏ qua, dùng state rỗng */ }
+  }, [])
+
+  const onGuardHash = useCallback((hash) => setConfigHash(hash), [])
+  const onGuardError = useCallback((msg) => setError(msg), [])
+  const promptGuard = useGuardToggle(apiBase, GUARDS.promptGuard, {
+    initial: guardHealth.prompt_guard, onHash: onGuardHash, onError: onGuardError,
+  })
+  const llamaGuard = useGuardToggle(apiBase, GUARDS.llamaGuard, {
+    initial: guardHealth.llama_guard, onHash: onGuardHash, onError: onGuardError,
+  })
+
+  const toggleTrace = useCallback(() => {
+    setTraceOn((v) => {
+      try { localStorage.setItem(TRACE_KEY, v ? '0' : '1') } catch { /* bỏ qua */ }
+      return !v
+    })
+  }, [])
+
+  /** Mở bộ xem guardrail, cuộn tới luật/section (null = đầu trang). */
+  const openRules = useCallback((focus) => {
+    let anchor = focus
+    if (focus?.startsWith('llama_guard')) anchor = 'stage:llama_guard_input'
+    if (focus?.startsWith('prompt_guard')) anchor = 'stage:prompt_guard'
+    setRules({ open: true, focus: anchor })
   }, [])
 
   const persist = useCallback((next) => {
     setSessions(next)
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch { /* hết quota — bỏ qua */ }
+    saveSessions(next)
   }, [])
 
   // ===== Auto-scroll =====
@@ -139,6 +190,7 @@ export default function ChatShell({ apiBase = '/api' }) {
         if (d.target_config_hash) setConfigHash(d.target_config_hash)
         if (d.scenario_customer_id) setScenarioCustomerId(d.scenario_customer_id)
         if (d.llm) setLlmActive(d.llm)
+        setGuardHealth({ prompt_guard: d.prompt_guard, llama_guard: d.llama_guard })
       })
       .catch(() => { /* backend chưa lên */ })
 
@@ -191,9 +243,7 @@ export default function ChatShell({ apiBase = '/api' }) {
     setSessions((prev) => {
       const rest = prev.filter((s) => s.id !== localSessionId)
       const next = [entry, ...rest].slice(0, 30)
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-      } catch { /* bỏ qua */ }
+      saveSessions(next)
       return next
     })
   }, [localSessionId, mode])
@@ -215,7 +265,7 @@ export default function ChatShell({ apiBase = '/api' }) {
       const res = await fetch(`${apiBase}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, session_id: serverSessionId ?? undefined, mode }),
+        body: JSON.stringify({ message: text, session_id: serverSessionId ?? undefined, mode, include_trace: traceOn }),
       })
       const data = await res.json().catch(() => ({ detail: 'Phản hồi không hợp lệ từ server' }))
       if (!res.ok) throw new Error(data?.detail || `HTTP ${res.status}`)
@@ -238,6 +288,8 @@ export default function ChatShell({ apiBase = '/api' }) {
           tokens: data.total_tokens,
           blocked: data.guardrail_blocked,
           actions: data.guardrail_actions,
+          trace: data.trace,
+          prompt: text,
         },
       }
       const finalMsgs = [...optimistic, assistantMsg]
@@ -255,7 +307,7 @@ export default function ChatShell({ apiBase = '/api' }) {
     } finally {
       setBusy(false)
     }
-  }, [input, busy, messages, serverSessionId, apiBase, syncCurrentSession, mode])
+  }, [input, busy, messages, serverSessionId, apiBase, syncCurrentSession, mode, traceOn])
 
   /** Bắt đầu phiên mới (không xoá lịch sử). */
   const startNewSession = useCallback(() => {
@@ -337,10 +389,30 @@ export default function ChatShell({ apiBase = '/api' }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="hidden items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1.5 text-[11px] text-ink-400 sm:flex">
+          <button
+            type="button"
+            onClick={() => openRules(null)}
+            title="Xem nội dung guardrail"
+            className="hidden items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1.5 text-[11px] text-ink-400 transition hover:border-brand-300 sm:flex"
+          >
             <ShieldCheck size={13} className="text-brand-500" weight="duotone" />
             defense <span className="font-mono font-medium text-ink-600">{profile}</span>
-          </span>
+            <Eye size={12} className="text-ink-400" />
+          </button>
+          <GuardHeaderButton state={promptGuard} Icon={ShieldWarning} />
+          <GuardHeaderButton state={llamaGuard} Icon={ShieldPlus} />
+          <button
+            type="button"
+            onClick={toggleTrace}
+            aria-pressed={traceOn}
+            title="Hiển thị đường đi của prompt qua guardrail"
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-medium transition ${
+              traceOn ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-ink-200 bg-white text-ink-400 hover:border-violet-200'
+            }`}
+          >
+            <Path size={13} weight="bold" />
+            <span className="hidden sm:inline">Trace</span> {traceOn ? 'bật' : 'tắt'}
+          </button>
           <button
             onClick={startNewSession}
             className="flex items-center gap-1.5 rounded-full bg-brand-500 px-3.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-brand-600 active:scale-95"
@@ -559,6 +631,12 @@ export default function ChatShell({ apiBase = '/api' }) {
                   ) : (
                     <div className="whitespace-pre-wrap">{m.content}</div>
                   )}
+                  {m.meta?.trace && (
+                    <TraceBadge
+                      trace={m.meta.trace}
+                      onOpen={() => setTraceView({ trace: m.meta.trace, prompt: m.meta.prompt, reply: m.content })}
+                    />
+                  )}
                   {m.meta && !m.meta.error && (
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-ink-100 pt-1.5 text-[10px] text-ink-400">
                       <span className="font-mono">{m.meta.model}</span>
@@ -703,6 +781,17 @@ export default function ChatShell({ apiBase = '/api' }) {
                 })}
               </div>
 
+              <GuardSwitchRow state={promptGuard} Icon={ShieldWarning} />
+              <GuardSwitchRow state={llamaGuard} Icon={ShieldPlus} />
+
+              <button
+                type="button"
+                onClick={() => openRules(null)}
+                className="flex w-full items-center justify-center gap-1 rounded-lg bg-brand-50 py-1 text-[10px] font-semibold text-brand-700 transition hover:bg-brand-100"
+              >
+                <Eye size={11} /> Xem nội dung guardrail
+              </button>
+
               <p className="text-[9px] leading-snug text-ink-400">
                 {profile === 'strict'
                   ? `Chặn input/output + khóa tool cho ${scenarioCustomerId}`
@@ -719,6 +808,25 @@ export default function ChatShell({ apiBase = '/api' }) {
           </div>
         </aside>
       </div>
+
+      <TraceDrawer
+        apiBase={apiBase}
+        view={traceView}
+        onClose={() => setTraceView(null)}
+        onOpenRule={openRules}
+      />
+      <GuardrailRules
+        apiBase={apiBase}
+        open={rules.open}
+        focus={rules.focus}
+        mode={mode}
+        onClose={() => setRules({ open: false, focus: null })}
+        onChanged={(cfg) => {
+          if (cfg.kind === 'prompt_guard') promptGuard.setOn(Boolean(cfg.enabled))
+          if (cfg.kind === 'llama_guard') llamaGuard.setOn(Boolean(cfg.enabled))
+          if (cfg.target_config_hash) setConfigHash(cfg.target_config_hash)
+        }}
+      />
 
       <ModelPanel
         apiBase={apiBase}

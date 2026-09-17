@@ -58,6 +58,28 @@ class Settings(BaseSettings):
     # --- GUARDRAIL (W5: bật/tắt để đo bypass rate) ---
     DEFENSE_PROFILE: Literal["none", "basic", "strict"] = "none"
 
+    # --- LLAMA GUARD (chốt riêng, model phân loại chạy local: llama.cpp server hoặc Ollama) ---
+    LLAMA_GUARD_ENABLED: bool = False
+    LLAMA_GUARD_BASE_URL: str = "http://localhost:8088/v1"
+    LLAMA_GUARD_MODEL: str = "Llama-Guard-3-1B-Q4_K_M"
+    LLAMA_GUARD_API_KEY: str = ""
+    LLAMA_GUARD_CHECK_OUTPUT: bool = True
+    LLAMA_GUARD_FAIL_MODE: Literal["closed", "open"] = "closed"
+    LLAMA_GUARD_TIMEOUT_SECONDS: float = 30.0
+
+    # --- PROMPT GUARD 2 (chốt riêng: prompt injection / jailbreak, model local CPU) ---
+    PROMPT_GUARD_ENABLED: bool = False
+    PROMPT_GUARD_URL: str = "http://localhost:8089"
+    PROMPT_GUARD_MODEL: str = "Llama-Prompt-Guard-2-86M"
+    PROMPT_GUARD_THRESHOLD: float = 0.5
+    PROMPT_GUARD_CHECK_RAG: bool = True
+    PROMPT_GUARD_FAIL_MODE: Literal["closed", "open"] = "closed"
+    PROMPT_GUARD_TIMEOUT_SECONDS: float = 15.0
+
+    # --- TRACE: trả pipeline guardrail cho UI khi request có include_trace ---
+    # Tắt khi chạy benchmark nếu không muốn caller thấy luật guardrail.
+    GUARDRAIL_TRACE_ENABLED: bool = True
+
     # --- ROE LIMITS ---
     ROE_MAX_REQUESTS_PER_MIN: int = 30
     ROE_MAX_TOKENS_TOTAL: int = 500_000
@@ -84,19 +106,29 @@ class Settings(BaseSettings):
         """Hash cấu hình theo profile thực sự đang chạy (kể cả runtime override)."""
         import hashlib
 
+        from src.guardrails import llama_guard, prompt_guard
         from src.services import llm_runtime
 
         endpoint = llm_runtime.get_active()
-        payload = "|".join(
-            [
-                endpoint.provider,
-                endpoint.model,
-                str(self.LLM_TEMPERATURE),
-                defense_profile,
-                self.CANARY_TOKEN,
-                self.SCENARIO_CUSTOMER_ID,
-            ]
-        )
+        guard = llama_guard.get_config()
+        injection_guard = prompt_guard.get_config()
+        parts = [
+            endpoint.provider,
+            endpoint.model,
+            str(self.LLM_TEMPERATURE),
+            defense_profile,
+            self.CANARY_TOKEN,
+            self.SCENARIO_CUSTOMER_ID,
+        ]
+        if guard.enabled:
+            # Chỉ thêm khi bật để hash của các run cũ (không Llama Guard) giữ nguyên.
+            parts.append(f"llama_guard={guard.model}{'+output' if guard.check_output else ''}")
+        if injection_guard.enabled:
+            parts.append(
+                f"prompt_guard={injection_guard.model}@{injection_guard.threshold}"
+                f"{'+rag' if injection_guard.check_rag else ''}"
+            )
+        payload = "|".join(parts)
         return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 

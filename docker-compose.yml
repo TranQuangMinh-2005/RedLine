@@ -27,6 +27,9 @@ services:
       # Override cho từng run, ví dụ: DEFENSE_PROFILE=strict make up
       DEFENSE_PROFILE: ${DEFENSE_PROFILE:-none}
       DATABASE_URL: postgresql://redline:redline@db:5432/redline
+      # Llama Guard chạy local trong service llama-guard (make llama-guard-up)
+      LLAMA_GUARD_BASE_URL: ${LLAMA_GUARD_BASE_URL:-http://llama-guard:8080/v1}
+      PROMPT_GUARD_URL: ${PROMPT_GUARD_URL:-http://prompt-guard:8000}
     # Cho phép endpoint http://host.docker.internal:11434/v1 (Ollama trên máy host)
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -42,6 +45,49 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Chốt Llama Guard local: llama.cpp server (CPU) + GGUF Llama-Guard-3-1B Q4_K_M (~1 GB).
+  # Chỉ chạy khi bật profile:  make llama-guard-up
+  # --jinja dùng chat template Llama Guard nhúng trong GGUF (model trả "safe" / "unsafe\nS1").
+  llama-guard:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    profiles: ["llama-guard"]
+    command:
+      - -m
+      - /models/${LLAMA_GUARD_GGUF:-Llama-Guard-3-1B.Q4_K_M.gguf}
+      - --alias
+      - ${LLAMA_GUARD_MODEL:-Llama-Guard-3-1B-Q4_K_M}
+      - --jinja
+      - -c
+      - "4096"
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+    ports:
+      - "8088:8080"
+    volumes:
+      - ./data/models:/models:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  # Chốt Prompt Guard 2 (86M) local CPU: phát hiện prompt injection / jailbreak.
+  # Model gated trên Hugging Face -> cần HF_TOKEN đã được Meta duyệt.  make prompt-guard-up
+  prompt-guard:
+    build: ./services/prompt_guard
+    profiles: ["prompt-guard"]
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      MODEL_DIR: /models/Llama-Prompt-Guard-2-86M
+    ports:
+      - "8089:8000"
+    volumes:
+      - ./data/models:/models
+    restart: unless-stopped
 
 volumes:
   pgdata:

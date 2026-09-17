@@ -15,6 +15,7 @@ from src.main import app
 from src.db.models import configure_database, init_db
 from src.services import redact as redact_module
 from src.guardrails import state as defense_state
+from src.guardrails import llama_guard, prompt_guard
 from src.services import llm_runtime
 from src.services.rate_limit import roe_budget
 
@@ -23,10 +24,14 @@ from src.services.rate_limit import roe_budget
 def reset_runtime_defense_profile() -> Iterator[None]:
     defense_state.reset_to_default()
     llm_runtime.reset_to_default()
+    llama_guard.reset_to_default()
+    prompt_guard.reset_to_default()
     roe_budget.reset()
     yield
     defense_state.reset_to_default()
     llm_runtime.reset_to_default()
+    llama_guard.reset_to_default()
+    prompt_guard.reset_to_default()
     roe_budget.reset()
 
 

@@ -11,18 +11,16 @@ from src.agents import target_agent
 from src.agents.session import InMemorySessionStore, SessionLimitError
 from src.api.schemas import ChatRequest, ChatResponse
 from src.config import get_settings
+from src.guardrails import pipeline
 from src.guardrails import state as defense_state
-from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_messages
-from src.guardrails.output_filter import inspect_output
 from src.logging_config import audit_event, reset_request_context, set_request_context
-from src.services import llm_runtime
 from src.services.rate_limit import RateLimitExceeded, TokenBudgetExceeded, roe_budget
 
 router = APIRouter()
 session_store = InMemorySessionStore(max_messages=50)
 
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat", response_model=ChatResponse, response_model_exclude_none=True)
 def chat(req: ChatRequest) -> ChatResponse:
     started = time.monotonic()
     settings = get_settings()
@@ -53,60 +51,27 @@ def chat(req: ChatRequest) -> ChatResponse:
         audit_event("session_loaded", request_id=request_id, session_id=session_id, history_messages=len(state.messages))
         state = session_store.append_message(session_id, "user", req.message)
         message_history = [message.as_dict() for message in state.messages]
-        input_decision = inspect_messages(message_history, profile)
-        if input_decision.blocked:
-            reply = BLOCKED_INPUT_REPLY
-            session_store.append_message(session_id, "assistant", reply)
-            response = ChatResponse(
-                mode=req.mode,
-                session_id=session_id,
-                reply=reply,
-                model=llm_runtime.active_model(),
-                latency_s=round(time.monotonic() - started, 3),
-                total_tokens=0,
-                canary_leaked=False,
-                raw_canary_detected=False,
-                delivered_canary_detected=False,
-                defense_profile=profile.name,
-                target_config_hash=settings.target_config_hash_for(profile.name),
-                guardrail_blocked=True,
-                guardrail_actions=list(input_decision.actions),
-            )
-        else:
-            result = target_agent.respond(
-                message_history,
-                defense_profile=profile,
-                mode=req.mode,
-                request_id=request_id,
-            )
-            raw_canary_detected = target_agent.leaked_canary(result["text"])
-            output_decision = inspect_output(
-                result["text"],
-                profile,
-                canary=settings.CANARY_TOKEN,
-                allowed_customer_id=settings.SCENARIO_CUSTOMER_ID,
-            )
-            raw_canary_detected = raw_canary_detected or any(
-                action in {"output_block:canary", "output_block:encoded_canary"}
-                for action in output_decision.actions
-            )
-            reply = output_decision.text
-            session_store.append_message(session_id, "assistant", reply)
-            response = ChatResponse(
-                mode=req.mode,
-                session_id=session_id,
-                reply=reply,
-                model=result["model"],
-                latency_s=float(result["latency_s"]),
-                total_tokens=int(result["total_tokens"]),
-                canary_leaked=target_agent.leaked_canary(reply),
-                raw_canary_detected=raw_canary_detected,
-                delivered_canary_detected=target_agent.leaked_canary(reply),
-                defense_profile=profile.name,
-                target_config_hash=settings.target_config_hash_for(profile.name),
-                guardrail_blocked=output_decision.filtered,
-                guardrail_actions=list(output_decision.actions),
-            )
+        outcome = pipeline.run_turn(
+            message_history, profile=profile, mode=req.mode, request_id=request_id, started=started
+        )
+        session_store.append_message(session_id, "assistant", outcome.reply)
+        response = ChatResponse(
+            mode=req.mode,
+            session_id=session_id,
+            reply=outcome.reply,
+            model=outcome.model,
+            latency_s=outcome.latency_s,
+            total_tokens=outcome.total_tokens,
+            canary_leaked=outcome.delivered_canary_detected,
+            raw_canary_detected=outcome.raw_canary_detected,
+            delivered_canary_detected=outcome.delivered_canary_detected,
+            defense_profile=profile.name,
+            target_config_hash=settings.target_config_hash_for(profile.name),
+            guardrail_blocked=outcome.guardrail_blocked,
+            guardrail_actions=outcome.guardrail_actions,
+            trace=outcome.trace if req.include_trace and settings.GUARDRAIL_TRACE_ENABLED else None,
+        )
+        if outcome.total_tokens:
             roe_budget.record_tokens(settings.SCENARIO_CUSTOMER_ID, response.total_tokens)
         audit_event("response_sent", request_id=request_id, session_id=session_id, status_code=200, latency_s=round(time.monotonic() - started, 3))
         return response

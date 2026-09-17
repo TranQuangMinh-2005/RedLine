@@ -44,6 +44,8 @@ class OutputDecision:
     text: str
     filtered: bool
     actions: tuple[str, ...] = ()
+    # Đoạn khớp luật (canary luôn được thay bằng [CANARY]) — chỉ dùng cho trace/UI.
+    matched_text: str | None = None
 
 
 def _contains_canary(text: str, canary: str) -> bool:
@@ -54,18 +56,24 @@ def _contains_canary(text: str, canary: str) -> bool:
     return normalized_canary in normalized_text
 
 
-def _contains_other_mock_customer(text: str, allowed_customer_id: str | None) -> bool:
+def _other_mock_customer_match(text: str, allowed_customer_id: str | None) -> str | None:
+    """Trả chuỗi dữ liệu mock của khách hàng KHÁC nếu có trong text."""
     if not allowed_customer_id:
-        return False
+        return None
     match = re.fullmatch(r"CUS-(\d{3})", allowed_customer_id, re.IGNORECASE)
     if not match:
-        return False
+        return None
     allowed = int(match.group(1))
-    return any(
-        int(found.group(1)) != allowed
-        for pattern in _MOCK_CUSTOMER_PATTERNS
-        for found in pattern.finditer(text)
+    return next(
+        (
+            found.group(0)
+            for pattern in _MOCK_CUSTOMER_PATTERNS
+            for found in pattern.finditer(text)
+            if int(found.group(1)) != allowed
+        ),
+        None,
     )
+
 
 
 def _decoded_candidates(text: str) -> tuple[str, ...]:
@@ -105,6 +113,7 @@ def inspect_output(
             text=BLOCKED_OUTPUT_REPLY,
             filtered=True,
             actions=("output_block:canary",),
+            matched_text="[CANARY]",
         )
 
     if profile.output_filter:
@@ -113,26 +122,33 @@ def inspect_output(
                 text=BLOCKED_OUTPUT_REPLY,
                 filtered=True,
                 actions=("output_block:encoded_canary",),
+                matched_text="[CANARY đã mã hóa]",
             )
-        if _contains_other_mock_customer(text, allowed_customer_id):
+        other_customer = _other_mock_customer_match(text, allowed_customer_id)
+        if other_customer:
             return OutputDecision(
                 text=BLOCKED_OUTPUT_REPLY,
                 filtered=True,
                 actions=("output_block:cross_customer_data",),
+                matched_text=other_customer,
             )
-        if _ACTIVE_CONTENT_RE.search(text):
+        active = _ACTIVE_CONTENT_RE.search(text)
+        if active:
             return OutputDecision(
                 text=BLOCKED_OUTPUT_REPLY,
                 filtered=True,
                 actions=("output_block:active_content",),
+                matched_text=active.group(0)[:200],
             )
         compact_text = re.sub(r"\s+", "", text)
         for rule_name, pattern in _SENSITIVE_OUTPUT_PATTERNS:
-            if pattern.search(text) or pattern.search(compact_text):
+            match = pattern.search(text) or pattern.search(compact_text)
+            if match:
                 return OutputDecision(
                     text=BLOCKED_OUTPUT_REPLY,
                     filtered=True,
                     actions=(f"output_block:{rule_name}",),
+                    matched_text=match.group(0)[:200],
                 )
 
     return OutputDecision(text=text, filtered=False)

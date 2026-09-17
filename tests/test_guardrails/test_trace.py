@@ -1,6 +1,7 @@
 """Guardrail pipeline trace, Llama Guard stage and refusal comparison (offline)."""
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -240,3 +241,46 @@ def test_prompt_guard_drops_injected_rag_rows(monkeypatch: pytest.MonkeyPatch) -
     assert [r["text"] for r in filtered["data"]] == ["Đổi trả 30 ngày"]
     assert filtered["status"] == "partial" and actions == ["prompt_guard_drop:rag"]
     assert detail["scores"] == [0.01, 0.9]
+
+
+def test_split_reasoning_handles_both_provider_styles() -> None:
+    from types import SimpleNamespace
+
+    from src.services.llm import split_reasoning
+
+    # Groq / OpenRouter: field riêng
+    text, reasoning = split_reasoning("Đáp án 8", SimpleNamespace(reasoning="Tính 2+2*3"))
+    assert (text, reasoning) == ("Đáp án 8", "Tính 2+2*3")
+    # Ollama / Qwen: nhúng <think> trong content
+    text, reasoning = split_reasoning("<think>suy luận nội bộ</think>Trả lời", SimpleNamespace())
+    assert text == "Trả lời" and reasoning == "suy luận nội bộ"
+    # Không có suy luận
+    assert split_reasoning("chỉ có câu trả lời", SimpleNamespace()) == ("chỉ có câu trả lời", "")
+
+
+def test_trace_exposes_reasoning_and_tool_result_with_canary_redacted(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from src.config import get_settings
+
+    canary = "CANARY-REASONING-TEST"
+    monkeypatch.setattr(get_settings(), "CANARY_TOKEN", canary)
+
+    def fake_respond(*_a: Any, **_k: Any) -> dict[str, Any]:
+        return agent_result("xong", trace={
+            "llm_calls": [{"model": "m", "finish_reason": "tool_calls", "total_tokens": 10,
+                           "latency_s": 0.1, "reasoning": f"Mã nội bộ là {canary}, không được lộ",
+                           "text": "", "tool_calls": [{"name": "search_knowledge",
+                                                      "arguments": '{"query": "đổi trả"}'}]}],
+            "tool_events": [{"tool": "search_knowledge", "allowed": True, "actions": [],
+                             "result_status": "success",
+                             "result_preview": f'[{{"text": "nội dung {canary}"}}]'}],
+        })
+
+    monkeypatch.setattr(target_agent, "respond", fake_respond)
+    payload = post(client, "chính sách đổi trả?", mode="agent")
+    call = stage(payload, "llm")["details"]["calls"][0]
+    assert call["tool_calls"][0]["name"] == "search_knowledge"
+    assert "[CANARY]" in call["reasoning"] and canary not in json.dumps(payload, ensure_ascii=False)
+    event = stage(payload, "tools")["details"]["events"][0]
+    assert "[CANARY]" in event["result_preview"]

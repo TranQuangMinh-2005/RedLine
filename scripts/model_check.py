@@ -1,9 +1,10 @@
-"""Kiểm tra model Groq khả dụng và đề xuất model nhẹ cho RedLine.
+"""Kiểm tra model khả dụng trên Groq / OpenRouter và đề xuất model nhẹ cho RedLine.
 
 Agent mode cần tool calling, nên ngoài việc list model, script có thể gọi thử
 một request nhỏ kèm tool để xác nhận model thực sự trả về tool_calls.
 
-    python scripts/model_check.py            # chỉ list + đề xuất
+    python scripts/model_check.py            # Groq: list + đề xuất
+    python scripts/model_check.py --provider openrouter   # OpenRouter (kèm giá, model :free)
     python scripts/model_check.py --probe    # gọi thử tool calling (tốn vài trăm token/model)
     python scripts/model_check.py --ollama   # kiểm tra tag Ollama trong danh mục có trên registry
 """
@@ -24,11 +25,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.services.model_catalog import (  # noqa: E402
     GROQ_FEATURED,
     OLLAMA_FEATURED,
+    OPENROUTER_FEATURED,
     annotate,
     is_groq_chat_model,
 )
 
 GROQ_URL = "https://api.groq.com/openai/v1"
+OPENROUTER_URL = "https://openrouter.ai/api/v1"
 PROBE_TOOL = {
     "type": "function",
     "function": {
@@ -91,17 +94,62 @@ def check_ollama_registry() -> None:
         print(f"  {row['id']:<16} {size:6.2f} GB  {'light' if row['light'] else ''}")
 
 
+def check_openrouter(api_key: str) -> int:
+    """List model OpenRouter: đánh dấu model free và model hỗ trợ tool calling."""
+    response = requests.get(f"{OPENROUTER_URL}/models",
+                            headers={"Authorization": f"Bearer {api_key}"}, timeout=60)
+    response.raise_for_status()
+    models = response.json()["data"]
+    by_id = {m["id"]: m for m in models}
+    free = [m for m in models if m["id"].endswith(":free")]
+    free_tools = [m for m in free if "tools" in (m.get("supported_parameters") or [])]
+    print(f"OpenRouter: {len(models)} model, {len(free)} model free, "
+          f"{len(free_tools)} model free có tool calling\n")
+
+    key_info = requests.get(f"{OPENROUTER_URL}/key",
+                            headers={"Authorization": f"Bearer {api_key}"}, timeout=30)
+    if key_info.ok:
+        d = key_info.json()["data"]
+        quota = d.get("free_model_daily_requests") or {}
+        print(f"Tài khoản: free_tier={d.get('is_free_tier')} | usage=${d.get('usage')} | "
+              f"free model hôm nay: {quota.get('used')}/{quota.get('limit')}\n")
+
+    print("Model nổi bật trong catalog:")
+    for row in OPENROUTER_FEATURED:
+        m = by_id.get(row["id"])
+        if m is None:
+            print(f"  ! {row['id']:<40} KHÔNG còn trên OpenRouter")
+            continue
+        pricing = m.get("pricing") or {}
+        price = "free" if row["id"].endswith(":free") else f"${float(pricing.get('prompt', 0)) * 1e6:.3f}/1M in"
+        tools = "tools" if "tools" in (m.get("supported_parameters") or []) else "no-tools"
+        print(f"  * {row['id']:<40} ctx={str(m.get('context_length')):<8} {price:<16} {tools}  {row['note']}")
+
+    print("\nModel free có tool calling (dùng được khi chưa nạp credit):")
+    for m in sorted(free_tools, key=lambda x: x["id"]):
+        print(f"    {m['id']:<45} ctx={m.get('context_length')}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--provider", choices=["groq", "openrouter"], default="groq")
     parser.add_argument("--probe", action="store_true", help="gọi thử tool calling")
     parser.add_argument("--ollama", action="store_true", help="kiểm tra tag Ollama")
     parser.add_argument("--json", action="store_true", help="in JSON thay vì bảng")
     args = parser.parse_args()
 
     load_dotenv()
-    api_key = os.environ.get("LLM_API_KEY", "").strip()
+    if args.provider == "openrouter":
+        key = os.environ.get("OPENROUTER_API_KEY", "").strip() or os.environ.get("LLM_API_KEY", "").strip()
+        if not key:
+            print("Thiếu OPENROUTER_API_KEY trong .env", file=sys.stderr)
+            return 1
+        return check_openrouter(key)
+
+    api_key = os.environ.get("GROQ_API_KEY", "").strip() or os.environ.get("LLM_API_KEY", "").strip()
     if not api_key:
-        print("Thiếu LLM_API_KEY trong .env", file=sys.stderr)
+        print("Thiếu GROQ_API_KEY/LLM_API_KEY trong .env", file=sys.stderr)
         return 1
 
     models = list_groq(api_key)

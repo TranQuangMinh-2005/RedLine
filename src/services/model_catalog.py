@@ -12,6 +12,9 @@ from __future__ import annotations
 from typing import Any
 
 DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
+# Model free mặc định cho OpenRouter: đã kiểm tra tiếng Việt + tool calling (23s chat / 8s tool).
+# Tài khoản chưa mua credit chỉ gọi được model đuôi ":free" và tối đa 50 request/ngày.
+DEFAULT_OPENROUTER_MODEL = "nex-agi/nex-n2.5-pro:free"
 
 GROQ_FEATURED: list[dict[str, Any]] = [
     {"id": "openai/gpt-oss-20b", "family": "gpt-oss", "label": "GPT-OSS 20B",
@@ -27,6 +30,27 @@ GROQ_NON_CHAT_PREFIXES = (
     "whisper", "canopylabs/", "meta-llama/llama-prompt-guard", "openai/gpt-oss-safeguard",
     "groq/compound", "allam-",
 )
+
+# OpenRouter: 444 model. Danh sách nổi bật = model free có tool calling (đã đo) + vài model
+# trả phí rất rẻ dùng được khi tài khoản đã nạp credit.
+OPENROUTER_FEATURED: list[dict[str, Any]] = [
+    {"id": "nex-agi/nex-n2.5-pro:free", "family": "nex", "label": "Nex N2.5 Pro (free)",
+     "tools": True, "light": True, "note": "Miễn phí — đã đo: tiếng Việt tốt, tool calling OK"},
+    {"id": "nex-agi/nex-n2.5-mini:free", "family": "nex", "label": "Nex N2.5 Mini (free)",
+     "tools": True, "light": True, "note": "Miễn phí, nhỏ hơn bản Pro"},
+    {"id": "google/gemma-4-31b-it:free", "family": "gemma", "label": "Gemma 4 31B (free)",
+     "tools": True, "light": True, "note": "Miễn phí — pool dùng chung, hay gặp 429"},
+    {"id": "nvidia/nemotron-3.5-lightning:free", "family": "nemotron", "label": "Nemotron 3.5 Lightning (free)",
+     "tools": True, "light": False, "note": "Miễn phí nhưng chậm (~60-105s) và lẫn suy luận vào câu trả lời"},
+    {"id": "openai/gpt-oss-20b", "family": "gpt-oss", "label": "GPT-OSS 20B",
+     "tools": True, "light": True, "note": "Cần credit — cùng model đang dùng ở Groq, giá ~$0.03/1M token"},
+    {"id": "openai/gpt-oss-120b", "family": "gpt-oss", "label": "GPT-OSS 120B",
+     "tools": True, "light": False, "note": "Cần credit"},
+    {"id": "meta-llama/llama-3.3-70b-instruct", "family": "llama", "label": "Llama 3.3 70B",
+     "tools": True, "light": False, "note": "Cần credit — Llama có tool calling"},
+    {"id": "qwen/qwen3-8b", "family": "qwen", "label": "Qwen3 8B",
+     "tools": True, "light": True, "note": "Cần credit"},
+]
 
 OLLAMA_FEATURED: list[dict[str, Any]] = [
     {"id": "qwen3.5:4b", "family": "qwen", "label": "Qwen3.5 4B", "size_gb": 3.39,

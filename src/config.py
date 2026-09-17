@@ -31,10 +31,15 @@ class Settings(BaseSettings):
     LLM_BASE_URL: str = "https://api.groq.com/openai/v1"
     LLM_TEMPERATURE: float = 0.0
     LLM_TIMEOUT_SECONDS: float = 120.0
+    # Reasoning model (gpt-oss): "low" | "medium" | "high". Rỗng = không gửi tham số.
+    # Đặt "low" để suy luận không ăn hết max_tokens khiến câu trả lời rỗng.
+    LLM_REASONING_EFFORT: str = ""
     # Endpoint khởi động: env (biến LLM_* ở trên) | groq | custom (REMOTE_LLM_*)
-    LLM_ENDPOINT: Literal["env", "groq", "custom"] = "env"
+    LLM_ENDPOINT: Literal["env", "groq", "openrouter", "custom"] = "env"
     # Key Groq riêng; bỏ trống thì dùng LLM_API_KEY khi LLM_BASE_URL là Groq.
     GROQ_API_KEY: str = ""
+    # Key OpenRouter riêng; bỏ trống thì dùng LLM_API_KEY khi LLM_BASE_URL là OpenRouter.
+    OPENROUTER_API_KEY: str = ""
     # Endpoint ngoài điền sẵn cho UI, ví dụ Kaggle gateway: https://xxxx.ngrok-free.app/v1
     REMOTE_LLM_BASE_URL: str = ""
     REMOTE_LLM_API_KEY: str = ""

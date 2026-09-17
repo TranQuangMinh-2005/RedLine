@@ -18,11 +18,12 @@ from typing import Any, Literal
 from urllib.parse import urlparse
 
 from src.config import get_settings
-from src.services.model_catalog import DEFAULT_GROQ_MODEL
+from src.services.model_catalog import DEFAULT_GROQ_MODEL, DEFAULT_OPENROUTER_MODEL
 
-EndpointKind = Literal["env", "groq", "custom"]
-ENDPOINT_KINDS: tuple[str, ...] = ("env", "groq", "custom")
+EndpointKind = Literal["env", "groq", "openrouter", "custom"]
+ENDPOINT_KINDS: tuple[str, ...] = ("env", "groq", "openrouter", "custom")
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,8 @@ def infer_provider(base_url: str) -> str:
     host = (urlparse(base_url).hostname or "").lower()
     if host.endswith("groq.com"):
         return "groq"
+    if host.endswith("openrouter.ai"):
+        return "openrouter"
     if urlparse(base_url).port == 11434 or "ollama" in host:
         return "ollama"
     return "openai-compatible"
@@ -60,11 +63,13 @@ def normalize_base_url(base_url: str) -> str:
     return url
 
 
-def _groq_key() -> str:
+def _provider_key(provider: str) -> str:
+    """Key riêng của provider, fallback về LLM_API_KEY nếu .env đang trỏ đúng provider đó."""
     settings = get_settings()
-    if settings.GROQ_API_KEY.strip():
-        return settings.GROQ_API_KEY.strip()
-    if infer_provider(settings.LLM_BASE_URL) == "groq":
+    dedicated = {"groq": settings.GROQ_API_KEY, "openrouter": settings.OPENROUTER_API_KEY}.get(provider, "")
+    if dedicated.strip():
+        return dedicated.strip()
+    if infer_provider(settings.LLM_BASE_URL) == provider:
         return settings.LLM_API_KEY.strip()
     return ""
 
@@ -85,10 +90,19 @@ def preset(kind: str, model: str | None = None) -> LLMEndpoint:
     """Endpoint theo loại, chưa kích hoạt. Raises ValueError nếu chưa cấu hình."""
     settings = get_settings()
     if kind == "env":
-        return LLMEndpoint("env", settings.LLM_BASE_URL.rstrip("/"), settings.LLM_API_KEY.strip(),
-                           model or settings.LLM_MODEL, settings.LLM_PROVIDER)
+        base_url = settings.LLM_BASE_URL.rstrip("/")
+        provider = infer_provider(base_url)
+        # Nếu LLM_API_KEY trống, dùng key riêng của provider (GROQ_API_KEY / OPENROUTER_API_KEY).
+        api_key = settings.LLM_API_KEY.strip() or _provider_key(provider)
+        # Ưu tiên provider suy từ base_url: nhãn LLM_PROVIDER trong .env hay bị bỏ quên khi đổi endpoint.
+        label = settings.LLM_PROVIDER.strip()
+        resolved = provider if provider != "openai-compatible" else (label or provider)
+        return LLMEndpoint("env", base_url, api_key, model or settings.LLM_MODEL, resolved)
     if kind == "groq":
-        return LLMEndpoint("groq", GROQ_BASE_URL, _groq_key(), model or DEFAULT_GROQ_MODEL, "groq")
+        return LLMEndpoint("groq", GROQ_BASE_URL, _provider_key("groq"), model or DEFAULT_GROQ_MODEL, "groq")
+    if kind == "openrouter":
+        return LLMEndpoint("openrouter", OPENROUTER_BASE_URL, _provider_key("openrouter"),
+                           model or DEFAULT_OPENROUTER_MODEL, "openrouter")
     if kind == "custom":
         with _lock:
             connection = _custom_connection()

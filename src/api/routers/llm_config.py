@@ -24,6 +24,7 @@ from src.services.llm_runtime import LLMEndpoint
 from src.services.model_catalog import (
     GROQ_FEATURED,
     OLLAMA_FEATURED,
+    OPENROUTER_FEATURED,
     annotate,
     is_groq_chat_model,
 )
@@ -34,6 +35,7 @@ router = APIRouter(prefix="/config/llm", tags=["config"])
 ENDPOINT_LABELS = {
     "env": "Docker environment (.env)",
     "groq": "Groq API",
+    "openrouter": "OpenRouter",
     "custom": "Endpoint khác (Kaggle / URL)",
 }
 
@@ -72,6 +74,8 @@ def _resolve(req: DiscoverRequest, model: str | None = None) -> LLMEndpoint:
 def _featured_for(endpoint: LLMEndpoint, gateway: bool) -> list[dict[str, Any]]:
     if endpoint.provider == "groq":
         return GROQ_FEATURED
+    if endpoint.provider == "openrouter":
+        return OPENROUTER_FEATURED
     if gateway or endpoint.provider == "ollama":
         return OLLAMA_FEATURED
     return GROQ_FEATURED + OLLAMA_FEATURED
@@ -82,7 +86,7 @@ def _endpoint_options() -> list[dict[str, Any]]:
     for kind in llm_runtime.ENDPOINT_KINDS:
         try:
             view = llm_runtime.public_view(llm_runtime.preset(kind))
-            view["configured"] = kind != "groq" or view["has_api_key"]
+            view["configured"] = kind not in {"groq", "openrouter"} or view["has_api_key"]
         except ValueError:
             view = {"kind": kind, "base_url": "", "model": "", "provider": "",
                     "has_api_key": False, "configured": False}

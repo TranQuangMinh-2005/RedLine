@@ -24,6 +24,14 @@ from src.logging_config import current_audit_event
 from src.services import llm
 
 
+def _preview(data: Any, limit: int = 600) -> str:
+    """Rút gọn kết quả tool cho trace; giữ nguyên cấu trúc dễ đọc."""
+    if data is None:
+        return ""
+    rendered = json.dumps(data, ensure_ascii=False)
+    return rendered if len(rendered) <= limit else rendered[:limit] + f"… (+{len(rendered) - limit} ký tự)"
+
+
 def build_system_prompt_sections(
     canary: str | None = None,
     profile: DefenseProfile | None = None,
@@ -172,7 +180,14 @@ def respond(
             "finish_reason": result.get("finish_reason"),
             "total_tokens": result.get("total_tokens", 0),
             "latency_s": result.get("latency_s", 0),
-            "tool_calls": [call.get("function", {}).get("name", "") for call in calls],
+            # Chuỗi suy luận của model (nếu provider trả về) — pipeline sẽ ẩn canary trước khi lộ ra API.
+            "reasoning": result.get("reasoning", ""),
+            "text": result.get("text", ""),
+            "tool_calls": [
+                {"name": call.get("function", {}).get("name", ""),
+                 "arguments": call.get("function", {}).get("arguments", "")}
+                for call in calls
+            ],
         })
         current_audit_event(
             "llm_completed",
@@ -279,6 +294,10 @@ def respond(
                     "error": "tool arguments are invalid",
                 }
             tool_event["result_status"] = tool_result.get("status")
+            # Kết quả tool (cắt ngắn) để trace cho thấy model thực sự nhận được gì.
+            tool_event["result_preview"] = _preview(tool_result.get("data"))
+            if tool_result.get("error"):
+                tool_event["result_error"] = str(tool_result["error"])[:200]
             event_fields: dict[str, Any] = {
                 "tool_call_id": call.get("id"),
                 "tool_name": name,

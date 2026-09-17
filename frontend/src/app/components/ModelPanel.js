@@ -14,12 +14,13 @@ import {
 } from '@phosphor-icons/react'
 
 const ENDPOINT_TABS = [
+  { kind: 'openrouter', label: 'OpenRouter', hint: 'OpenRouter — model ":free" dùng được khi chưa nạp credit (50 request/ngày)' },
   { kind: 'groq', label: 'Groq', hint: 'API Groq — mặc định GPT-OSS 20B' },
   { kind: 'env', label: 'Docker env', hint: 'Endpoint khai báo trong .env của container' },
   { kind: 'custom', label: 'Kaggle / URL', hint: 'Kaggle Ollama gateway (ngrok) hoặc URL OpenAI-compatible' },
 ]
 
-const FAMILY_LABEL = { 'gpt-oss': 'GPT-OSS', qwen: 'Qwen', llama: 'Llama' }
+const FAMILY_LABEL = { 'gpt-oss': 'GPT-OSS', qwen: 'Qwen', llama: 'Llama', nex: 'Nex', gemma: 'Gemma', nemotron: 'Nemotron' }
 
 async function api(apiBase, path, options = {}) {
   const res = await fetch(`${apiBase}${path}`, {
@@ -58,7 +59,7 @@ export function ModelSummary({ active, onOpen, disabled }) {
             {active?.model || 'đang tải…'}
           </span>
           <span className="block truncate text-[10px] text-ink-400">
-            {active ? `${active.kind === 'custom' ? 'Kaggle/URL' : active.kind === 'env' ? 'Docker env' : 'Groq'} · ${active.provider}` : ''}
+            {active ? `${active.kind === 'custom' ? 'Kaggle/URL' : active.kind === 'env' ? 'Docker env' : active.kind === 'openrouter' ? 'OpenRouter' : 'Groq'} · ${active.provider}` : ''}
           </span>
         </span>
         <span className="shrink-0 text-[10px] font-medium text-brand-700">Đổi</span>
@@ -286,7 +287,7 @@ export default function ModelPanel({ apiBase = '/api', open, onClose, onChanged 
 
         <div className="chat-scroll min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
           {/* Endpoint tabs */}
-          <div className="grid grid-cols-3 gap-2" role="tablist">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="tablist">
             {ENDPOINT_TABS.map((t) => {
               const ep = config?.endpoints.find((e) => e.kind === t.kind)
               return (

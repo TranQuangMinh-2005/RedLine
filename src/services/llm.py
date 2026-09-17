@@ -8,6 +8,7 @@ Dùng OpenAI-compatible SDK để gọi Groq (Imports: openai >= 1.0).
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 from typing import Any
@@ -18,9 +19,39 @@ from src.config import get_settings
 from src.services import llm_runtime
 from src.services.model_gateway import NGROK_HEADERS
 
+# Một số model reasoning (Qwen, DeepSeek qua Ollama) nhúng suy luận vào content.
+_THINK_RE = re.compile(r"<think>(.*?)</think>\s*", re.DOTALL | re.IGNORECASE)
+
+
+def split_reasoning(content: str, message: Any) -> tuple[str, str]:
+    """Tách (câu trả lời, chuỗi suy luận).
+
+    Groq/gpt-oss trả suy luận ở field riêng `reasoning`; Ollama/Qwen có thể nhúng
+    <think>...</think> vào content. Hỗ trợ cả hai để trace hiển thị được.
+    """
+    reasoning = ""
+    for field in ("reasoning", "reasoning_content", "thinking"):
+        value = getattr(message, field, None)
+        if isinstance(value, str) and value.strip():
+            reasoning = value.strip()
+            break
+    embedded = _THINK_RE.findall(content or "")
+    if embedded:
+        reasoning = (reasoning + "\n" + "\n".join(embedded)).strip() if reasoning else "\n".join(embedded).strip()
+        content = _THINK_RE.sub("", content or "").strip()
+    return content or "", reasoning
+
+
 # Cache client theo (base_url, api_key) — endpoint đổi runtime thì dùng client khác
 _clients: dict[tuple[str, str], OpenAI] = {}
 _clients_lock = threading.Lock()
+
+
+def _default_headers() -> dict[str, str]:
+    """Header chung: bỏ qua cảnh báo ngrok + attribution mà OpenRouter khuyến nghị."""
+    return {**NGROK_HEADERS,
+            "HTTP-Referer": "https://github.com/TranQuangMinh-2005/RedLine",
+            "X-Title": "RedLine Target"}
 
 
 def get_client() -> OpenAI:
@@ -36,7 +67,7 @@ def get_client() -> OpenAI:
                 base_url=endpoint.base_url,
                 timeout=get_settings().LLM_TIMEOUT_SECONDS,
                 max_retries=2,
-                default_headers=NGROK_HEADERS,
+                default_headers=_default_headers(),
             )
             _clients[cache_key] = client
         return client
@@ -67,6 +98,7 @@ def chat(
             "total_tokens": int,
             "latency_s": float,
             "finish_reason": str,
+            "reasoning": str,   # chuỗi suy luận nếu provider trả về (có thể rỗng)
         }
     """
     settings = get_settings()
@@ -82,6 +114,9 @@ def chat(
     if tools:
         request["tools"] = tools
         request["tool_choice"] = tool_choice or "auto"
+    # Chỉ gửi khi được cấu hình: không phải provider nào cũng chấp nhận tham số này.
+    if settings.LLM_REASONING_EFFORT:
+        request["reasoning_effort"] = settings.LLM_REASONING_EFFORT
     resp = client.chat.completions.create(**request)
     latency = time.time() - t0
 
@@ -94,8 +129,10 @@ def chat(
         }
         for i, call in enumerate(choice.message.tool_calls or [])
     ]
+    text, reasoning = split_reasoning(choice.message.content or "", choice.message)
     return {
-        "text": choice.message.content or "",
+        "text": text,
+        "reasoning": reasoning,
         "model": resp.model,
         "prompt_tokens": resp.usage.prompt_tokens if resp.usage else 0,
         "completion_tokens": resp.usage.completion_tokens if resp.usage else 0,

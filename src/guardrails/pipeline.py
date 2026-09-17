@@ -221,7 +221,13 @@ def run_turn(
     ))
     result = target_agent.respond(message_history, defense_profile=profile, mode=mode, request_id=request_id)
     agent_trace = result.get("trace") or {}
-    llm_calls = agent_trace.get("llm_calls") or []
+    # Suy luận có thể trích dẫn nguyên văn system prompt -> luôn ẩn canary trước khi trả ra API.
+    llm_calls = [
+        {**call,
+         "reasoning": redact_canary(str(call.get("reasoning") or "")),
+         "text": redact_canary(str(call.get("text") or ""))}
+        for call in (agent_trace.get("llm_calls") or [])
+    ]
     raw_text = result["text"]
     stages.append(_stage(
         "llm", "LLM", "called",
@@ -240,7 +246,12 @@ def run_turn(
             (f"Chặn {len(blocked_tools)}/{len(tool_events)} lời gọi tool." if blocked_tools
              else f"{len(tool_events)} lời gọi tool, không bị chặn." if tool_events
              else "LLM không gọi tool."),
-            events=[{**redact(event), "rules": _rules(event.get("actions", []))} for event in tool_events],
+            events=[
+                {**redact(event),
+                 "result_preview": redact_canary(str(event.get("result_preview") or "")),
+                 "rules": _rules(event.get("actions", []))}
+                for event in tool_events
+            ],
         ))
 
     # 5. Output filter (canary + regex)

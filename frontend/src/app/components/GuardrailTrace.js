@@ -114,6 +114,57 @@ function RuleList({ rules, onOpenRule }) {
   )
 }
 
+/** Một lượt gọi LLM: suy luận (nếu có), tool được gọi kèm tham số. */
+function LlmRound({ call, index }) {
+  const [open, setOpen] = useState(index === 0)
+  const reasoning = (call.reasoning || '').trim()
+  return (
+    <li className="rounded-xl border border-ink-200 bg-white/80 px-2 py-1.5">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[10px] text-ink-500">
+        <span className="rounded bg-ink-100 px-1.5 font-semibold text-ink-600">vòng {index + 1}</span>
+        <span>{call.total_tokens} tok</span>
+        <span>{Number(call.latency_s).toFixed(2)}s</span>
+        <span>{call.finish_reason}</span>
+      </div>
+      {call.tool_calls?.length > 0 && (
+        <ul className="mt-1 space-y-0.5">
+          {call.tool_calls.map((tc, i) => (
+            <li key={i} className="flex items-start gap-1 text-[10px]">
+              <Wrench size={11} className="mt-0.5 shrink-0 text-brand-600" />
+              <span className="min-w-0">
+                <span className="font-mono font-semibold text-brand-700">{tc.name}</span>
+                {tc.arguments && (
+                  <code className="ml-1 break-all font-mono text-ink-500">{tc.arguments}</code>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {reasoning ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="mt-1 flex items-center gap-1 text-[10px] font-medium text-violet-700 hover:underline"
+          >
+            <Brain size={11} weight="duotone" />
+            Suy luận của model ({reasoning.length} ký tự)
+            <CaretDown size={9} className={`transition ${open ? 'rotate-180' : ''}`} />
+          </button>
+          {open && (
+            <pre className="mt-1 max-h-56 overflow-auto whitespace-pre-wrap rounded-lg bg-violet-50 px-2 py-1.5 font-mono text-[10px] leading-relaxed text-violet-900">
+              {reasoning}
+            </pre>
+          )}
+        </>
+      ) : (
+        <p className="mt-1 text-[10px] text-ink-400">Provider không trả chuỗi suy luận cho model này.</p>
+      )}
+    </li>
+  )
+}
+
 function Label({ children }) {
   return <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-400">{children}</p>
 }
@@ -176,14 +227,9 @@ function StageDetails({ stage, onOpenRule }) {
       )}
       {d.calls?.length > 0 && (
         <div>
-          <Label>Các lượt gọi LLM</Label>
-          <ol className="space-y-0.5 font-mono text-[10px]">
-            {d.calls.map((c, i) => (
-              <li key={i}>
-                #{i + 1} {c.model} · {c.total_tokens} tok · {Number(c.latency_s).toFixed(2)}s · {c.finish_reason}
-                {c.tool_calls?.length > 0 && ` → ${c.tool_calls.join(', ')}`}
-              </li>
-            ))}
+          <Label>Các lượt gọi LLM ({d.calls.length})</Label>
+          <ol className="space-y-1.5">
+            {d.calls.map((c, i) => <LlmRound key={i} call={c} index={i} />)}
           </ol>
         </div>
       )}
@@ -199,6 +245,14 @@ function StageDetails({ stage, onOpenRule }) {
               {e.error && <p className="text-[10px] text-red-600">{e.error}</p>}
               {e.prompt_guard && (
                 <ScoreBars scores={e.prompt_guard.scores} threshold={e.prompt_guard.threshold} labelPrefix="tài liệu" />
+              )}
+              {e.result_preview && (
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-[10px] text-ink-400">Kết quả trả về cho model</summary>
+                  <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-ink-50 px-2 py-1 font-mono text-[10px] text-ink-600">
+                    {e.result_preview}
+                  </pre>
+                </details>
               )}
               <RuleList rules={e.rules} onOpenRule={onOpenRule} />
             </div>

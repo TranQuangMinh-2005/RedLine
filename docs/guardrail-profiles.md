@@ -15,12 +15,19 @@ the harness, not an identity asserted in an attacker prompt.
 | Prompt hardening | off | on | on |
 | Canary output check | off | on | on |
 | Sensitive output filter | off | off | on |
-| Tool authorization for the fixed customer | off | off | on |
+| Tool authorization for the fixed customer | off | on | on |
+| Retrieved-content trust label | off | on | on |
+| Suspicious RAG chunk quarantine | off | off | on |
+| Per-tool action policy | off | off | on |
 
 `none` intentionally retains broken authorization so the red-team harness can
-measure a baseline. `strict` performs deterministic authorization immediately
-before a customer-data or ticket tool executes; the LLM cannot grant itself or
-the caller access by emitting another customer ID.
+measure an unsafe baseline inside the sandbox. `basic` and `strict` perform
+deterministic authorization before a customer-data or ticket tool executes; the
+LLM cannot grant itself or the caller access by emitting another customer ID.
+
+`strict` additionally applies per-tool call limits, requires explicit create-ticket
+intent, binds ticket idempotency to the server request, and quarantines retrieved
+chunks that contain deterministic prompt-injection indicators.
 
 ## Always-on RoE controls
 

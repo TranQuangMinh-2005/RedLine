@@ -15,11 +15,11 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_messages
-from src.guardrails.output_filter import inspect_output
-from src.guardrails import state as defense_state
 from src.agents import target_agent
 from src.config import ExecutionMode, get_settings
+from src.guardrails import state as defense_state
+from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_messages
+from src.guardrails.output_filter import inspect_output
 from src.logging_config import audit_event, reset_request_context, set_request_context
 from src.services.rate_limit import RateLimitExceeded, TokenBudgetExceeded, roe_budget
 
@@ -157,21 +157,34 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
             total_tokens = 0
             model_name = req.model or settings.LLM_MODEL
             canary_leaked = False
+            raw_canary_detected = False
+            delivered_canary_detected = False
             guardrail_blocked = True
             guardrail_actions = list(input_decision.actions)
         else:
             # 2. Gọi RAG Target Agent
-            result = target_agent.respond(chat_messages, defense_profile=profile, mode=req.mode)
+            result = target_agent.respond(
+                chat_messages,
+                defense_profile=profile,
+                mode=req.mode,
+                request_id=request_id,
+            )
+            raw_canary_detected = target_agent.leaked_canary(result["text"])
             output_decision = inspect_output(
                 result["text"],
                 profile,
                 canary=settings.CANARY_TOKEN,
                 allowed_customer_id=settings.SCENARIO_CUSTOMER_ID,
             )
+            raw_canary_detected = raw_canary_detected or any(
+                action in {"output_block:canary", "output_block:encoded_canary"}
+                for action in output_decision.actions
+            )
             reply = output_decision.text
             total_tokens = int(result.get("total_tokens", 0))
             model_name = result.get("model", req.model or settings.LLM_MODEL)
             canary_leaked = target_agent.leaked_canary(reply)
+            delivered_canary_detected = canary_leaked
             guardrail_blocked = output_decision.filtered
             guardrail_actions = list(output_decision.actions)
 
@@ -269,6 +282,8 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
                 "mode": req.mode,
                 "session_id": session_id,
                 "canary_leaked": canary_leaked,
+                "raw_canary_detected": raw_canary_detected,
+                "delivered_canary_detected": delivered_canary_detected,
                 "defense_profile": profile.name,
                 "guardrail_blocked": guardrail_blocked,
                 "guardrail_actions": guardrail_actions,

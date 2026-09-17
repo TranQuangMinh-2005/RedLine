@@ -2,7 +2,7 @@
 
 **Ngày:** 2026-09-17 · **Target:** `http://localhost:8000` (Docker sandbox) · **Commit:** `9ee5ac5`
 **Phương pháp:** hoàn toàn hộp đen — chỉ gửi HTTP, ghi nguyên văn response. Không đọc source.
-**Evidence:** `runs/security-eval/recon/R*.json` (R01–R27) và `runs/security-eval/recon/deep.json`
+**Evidence:** `evidence/recon/R*.json` (R01–R27) và `evidence/recon/deep.json`
 (nhóm A/B/C). Script: `recon_probes.py`, `recon_deep.py`.
 
 Mỗi kết luận ghi rõ **Observation** (đọc từ response) hay **Inference** (suy luận, nói rõ căn cứ).

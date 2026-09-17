@@ -2,7 +2,7 @@
 
 **Ngày:** 2026-09-17 · **Commit:** `9ee5ac5` · **Phạm vi:** sandbox local/Docker được uỷ quyền.
 **Đầu vào:** [`docs/attack-surface.md`](attack-surface.md) (evidence R01–R27) và ma trận guardrail
-(`runs/security-eval/matrix.json`, case A01–A16 × C1–C5).
+(`evidence/matrix.json`, case A01–A16 × C1–C5).
 **Chuẩn tham chiếu:** OWASP GenAI **LLM Top 10 — bản 2026** (phát hành 8/2026).
 
 > Khác biệt so với bản 2025 cần lưu ý khi chấm: Excessive Agency lên **LLM03** (từ LLM06);

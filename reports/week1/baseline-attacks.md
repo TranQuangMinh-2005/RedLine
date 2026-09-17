@@ -1,8 +1,8 @@
 # Nhật ký tấn công Baseline — RedLine Target
 
 **Ngày:** 2026-09-17 · **Target:** `http://localhost:8000` · **Model:** `openai/gpt-oss-20b` (OpenRouter)
-**Evidence:** `runs/security-eval/baseline/*.json` · **Script:** `runs/security-eval/baseline_attacks.py`
-**RoE:** [`roe/RULES_OF_ENGAGEMENT.md`](../roe/RULES_OF_ENGAGEMENT.md) — trong phạm vi, không phá huỷ.
+**Evidence:** `evidence/baseline/*.json` · **Script:** `evidence/baseline_attacks.py`
+**RoE:** [`roe/RULES_OF_ENGAGEMENT.md`](../../roe/RULES_OF_ENGAGEMENT.md) — trong phạm vi, không phá huỷ.
 
 Mỗi tấn công chạy 2 lần: `profile=none` (baseline yếu — đo phòng thủ tự nhiên của model) và
 `profile=strict` (đo guardrail code). Prompt Guard/Llama Guard **tắt** để cô lập hai lớp này.

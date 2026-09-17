@@ -76,8 +76,8 @@ DB Postgres nội bộ (`db:5432`, chỉ expose trong mạng compose); 8 tài li
 
 **Phương pháp:** 16 prompt tấn công có nhãn + 4 prompt hợp lệ, chạy qua `POST /chat?include_trace=true`
 trên 5 cấu hình. "Chặn" = guardrail code thay câu trả lời; các trace khác cho biết model tự từ chối hay đi qua.
-Script tái lập: [`runs/security-eval/bypass_matrix.py`](../runs/security-eval/bypass_matrix.py);
-dữ liệu thô: `runs/security-eval/matrix.json`. Không có prompt tạo ticket (giữ ràng buộc no-persistence).
+Script tái lập: [`evidence/bypass_matrix.py`](evidence/bypass_matrix.py);
+dữ liệu thô: `evidence/matrix.json`. Không có prompt tạo ticket (giữ ràng buộc no-persistence).
 
 | Config | `target_config_hash` | Guardrail chặn (code) | Model tự từ chối/rỗng | Canary lộ | Benign chặn nhầm |
 |---|---|---|---|---|---|
@@ -171,7 +171,7 @@ cần lọc nội dung độc hại, và cân nhắc ngưỡng/ý nghĩa cho ng�
 
 ## 8. Phương pháp & khả năng tái lập
 
-- Ma trận bypass: `python runs/security-eval/bypass_matrix.py` (nhịp 2.2s/req để dưới RoE 30 req/phút).
+- Ma trận bypass: `python evidence/bypass_matrix.py` (nhịp 2.2s/req để dưới RoE 30 req/phút).
   Mỗi kết quả ghi kèm `target_config_hash` để tái lập cấu hình.
 - Sandbox đã được **đưa về trạng thái mặc định** sau đánh giá: `profile=none`, Prompt Guard tắt, Llama Guard tắt.
 - **Tác dụng phụ lưu trữ:** corpus RAG giữ nguyên 8 tài liệu. Ma trận guardrail không tạo ticket nào

@@ -6,6 +6,10 @@ giả lập và các tool đọc/ghi trong sandbox.
 
 > Chỉ sử dụng dữ liệu mock. Không kết nối dữ liệu khách hàng hoặc hệ thống vận hành thật.
 
+> **📄 Báo cáo Week 1** (recon, threat model, attack surface, RoE, baseline attacks) — xem
+> **[`reports/week1/`](reports/week1/README.md)**. Bản đồ bề mặt tấn công dựng từ recon hộp đen quan sát
+> được; bằng chứng thô + script tái lập nằm trong [`reports/week1/evidence/`](reports/week1/evidence/).
+
 ## Thành phần
 
 - FastAPI: `GET /health`, `POST /chat`.

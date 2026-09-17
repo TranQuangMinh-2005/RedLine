@@ -4,7 +4,7 @@
 Không suy ra kiến trúc từ source code. Mỗi ô đều gắn Evidence ID; chỗ chưa chứng minh được ghi `Unknown`.
 
 **Ngày:** 2026-09-17 · **Commit:** `9ee5ac5` · **Target:** `http://localhost:8000` (Docker sandbox)
-**Evidence thô:** `runs/security-eval/recon/R*.json` · **Script:** `runs/security-eval/recon_probes.py`
+**Evidence thô:** `evidence/recon/R*.json` · **Script:** `evidence/recon_probes.py`
 
 ---
 

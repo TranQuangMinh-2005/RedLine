@@ -111,3 +111,18 @@ def test_gateway_launcher_parses_defaults() -> None:
     spec.loader.exec_module(module)
     args = module.parse_args([])
     assert args.models == "qwen3.5:4b" and args.port == 8080
+
+
+def test_cors_preflight_is_open_without_token_but_requests_still_need_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gw, "GATEWAY_TOKEN", "s3cret-token-value")
+    client = TestClient(gw.app)
+    preflight = client.options("/v1/chat/completions", headers={
+        "Origin": "https://tool.example",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "authorization,content-type",
+    })
+    assert preflight.status_code == 200
+    assert preflight.headers["access-control-allow-origin"] == "*"
+    assert "authorization" in preflight.headers["access-control-allow-headers"].lower()
+    denied = client.get("/gateway/pulls", headers={"Origin": "https://tool.example"})
+    assert denied.status_code == 401 and denied.headers["access-control-allow-origin"] == "*"

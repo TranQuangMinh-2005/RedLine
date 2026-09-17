@@ -14,7 +14,10 @@ và dùng thêm API quản lý model:
     *      /v1/...                      proxy tới OpenAI API của Ollama (chat, models)
 
 Bảo vệ bằng `Authorization: Bearer $GATEWAY_TOKEN` (cùng giá trị làm API key của
-OpenAI client). Chạy:
+OpenAI client). CORS mở sẵn (GATEWAY_CORS_ORIGINS, mặc định "*") để công cụ chạy
+trên trình duyệt gọi được; preflight OPTIONS không cần token, request thật vẫn cần.
+Lưu ý ngrok free chặn GET từ trình duyệt bằng trang cảnh báo HTML trừ khi request có
+header `ngrok-skip-browser-warning`. Chạy:
 
     GATEWAY_TOKEN=... uvicorn src.gateway.ollama_gateway:app --port 8080
 """
@@ -34,6 +37,7 @@ from uuid import uuid4
 
 import httpx
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, ValidationError
 from starlette.background import BackgroundTask
@@ -42,6 +46,8 @@ from src.services.model_catalog import OLLAMA_FEATURED
 
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/")
 GATEWAY_TOKEN = os.environ.get("GATEWAY_TOKEN", "").strip()
+# "*" = mọi origin; danh sách phân tách bằng dấu phẩy; rỗng = tắt CORS.
+CORS_ORIGINS = [o.strip() for o in os.environ.get("GATEWAY_CORS_ORIGINS", "*").split(",") if o.strip()]
 MODELS_DIR = os.environ.get("OLLAMA_MODELS") or os.path.expanduser("~/.ollama/models")
 MAX_JOBS = 50
 MODEL_PATTERN = r"^[A-Za-z0-9._/:-]+$"
@@ -183,6 +189,17 @@ pulls = PullManager()
 # ---------------- App ----------------
 
 app = FastAPI(title="RedLine Ollama Gateway", version="0.1.0")
+if CORS_ORIGINS:
+    # Middleware trả lời preflight trước khi tới dependency xác thực.
+    # Token đi qua header Authorization (không dùng cookie) nên allow_credentials=False.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=CORS_ORIGINS,
+        allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+        allow_credentials=False,
+        max_age=600,
+    )
 api = APIRouter(dependencies=[Depends(require_token)])
 
 

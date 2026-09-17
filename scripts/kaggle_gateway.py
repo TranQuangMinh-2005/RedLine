@@ -93,7 +93,8 @@ def run(args):
 
         gateway_env = os.environ.copy()
         gateway_env.update({"PYTHONPATH": str(ROOT), "OLLAMA_URL": OLLAMA_URL,
-                            "OLLAMA_MODELS": str(models_dir), "GATEWAY_TOKEN": gateway_token})
+                            "OLLAMA_MODELS": str(models_dir), "GATEWAY_TOKEN": gateway_token,
+                            "GATEWAY_CORS_ORIGINS": args.cors_origins})
         for key in ("NGROK_AUTH_TOKEN", "NGROK_AUTHTOKEN"):
             gateway_env.pop(key, None)
         gateway = spawn([sys.executable, "-m", "uvicorn", "src.gateway.ollama_gateway:app",
@@ -152,6 +153,8 @@ def parse_args(argv=None):
                         help="comma-separated models to pull before start; empty = none")
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--context-length", type=int, default=8192)
+    parser.add_argument("--cors-origins", default="*",
+                        help='CORS origins for browser tools: "*", comma list, or "" to disable')
     parser.add_argument("--allow-cpu", action="store_true")
     parser.add_argument("--runtime-dir", type=Path, default=ROOT / "runs/kaggle")
     return parser.parse_args(argv)

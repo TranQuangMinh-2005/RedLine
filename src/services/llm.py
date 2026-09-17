@@ -8,30 +8,38 @@ Dùng OpenAI-compatible SDK để gọi Groq (Imports: openai >= 1.0).
 
 from __future__ import annotations
 
+import threading
 import time
 from typing import Any
 
 from openai import OpenAI
 
 from src.config import get_settings
+from src.services import llm_runtime
+from src.services.model_gateway import NGROK_HEADERS
 
-# Singleton client — tránh tạo kết nối mới mỗi request
-_client: OpenAI | None = None
+# Cache client theo (base_url, api_key) — endpoint đổi runtime thì dùng client khác
+_clients: dict[tuple[str, str], OpenAI] = {}
+_clients_lock = threading.Lock()
 
 
 def get_client() -> OpenAI:
-    """Lazy-init OpenAI client trỏ tới Groq hoặc Ollama."""
-    global _client
-    if _client is None:
-        settings = get_settings()
-        api_key = settings.LLM_API_KEY.strip() or "ollama"
-        _client = OpenAI(
-            api_key=api_key,
-            base_url=settings.LLM_BASE_URL,
-            timeout=settings.LLM_TIMEOUT_SECONDS,
-            max_retries=2,
-        )
-    return _client
+    """OpenAI client trỏ tới endpoint đang hiệu lực (Groq, .env hoặc custom/Kaggle)."""
+    endpoint = llm_runtime.get_active()
+    api_key = endpoint.api_key or "ollama"
+    cache_key = (endpoint.base_url, api_key)
+    with _clients_lock:
+        client = _clients.get(cache_key)
+        if client is None:
+            client = OpenAI(
+                api_key=api_key,
+                base_url=endpoint.base_url,
+                timeout=get_settings().LLM_TIMEOUT_SECONDS,
+                max_retries=2,
+                default_headers=NGROK_HEADERS,
+            )
+            _clients[cache_key] = client
+        return client
 
 
 def chat(
@@ -66,7 +74,7 @@ def chat(
 
     t0 = time.time()
     request: dict[str, Any] = dict(
-        model=model or settings.LLM_MODEL,
+        model=model or llm_runtime.active_model(),
         messages=messages,
         temperature=settings.LLM_TEMPERATURE if temperature is None else temperature,
         max_tokens=max_tokens,

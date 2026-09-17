@@ -27,6 +27,9 @@ services:
       # Override cho từng run, ví dụ: DEFENSE_PROFILE=strict make up
       DEFENSE_PROFILE: ${DEFENSE_PROFILE:-none}
       DATABASE_URL: postgresql://redline:redline@db:5432/redline
+    # Cho phép endpoint http://host.docker.internal:11434/v1 (Ollama trên máy host)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./src:/app/src
       - ./data:/app/data

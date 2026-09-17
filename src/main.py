@@ -17,11 +17,13 @@ from fastapi import FastAPI
 
 from src.api.routers.chat import router as chat_router
 from src.api.routers.config import router as config_router
+from src.api.routers.llm_config import router as llm_config_router
 from src.api.routers.openai_compat import router as openai_router
 from src.api.routers.rag import router as rag_router
 from src.config import get_settings
 from src.logging_config import configure_logging
 from src.guardrails import state as defense_state
+from src.services import llm_runtime
 
 app = FastAPI(
     title="RedLine Target — Customer Assistant",
@@ -45,12 +47,14 @@ def health() -> dict:
         "time": time.time(),
         "defense_profile": active,
         "target_config_hash": settings.target_config_hash_for(active),
+        "llm": llm_runtime.public_view(llm_runtime.get_active()),
         "scenario_customer_id": settings.SCENARIO_CUSTOMER_ID,
     }
 
 
 app.include_router(chat_router)
 app.include_router(config_router)
+app.include_router(llm_config_router)
 app.include_router(openai_router)
 app.include_router(rag_router)
 configure_logging()

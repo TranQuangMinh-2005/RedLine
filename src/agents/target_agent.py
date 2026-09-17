@@ -266,7 +266,7 @@ def respond(
             })
     return {
         "text": "Không thể hoàn tất yêu cầu vì đã đạt giới hạn gọi công cụ.",
-        "model": kwargs.get("model") or get_settings().LLM_MODEL,
+        "model": kwargs.get("model") or llm.llm_runtime.active_model(),
         **totals,
         "finish_reason": "tool_limit",
         "tool_calls": [],

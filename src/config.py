@@ -23,13 +23,21 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # --- LLM (target dùng llama-3.3-70b-versatile trên Groq LPU) ---
+    # --- LLM: endpoint "env" (Docker environment) khởi tạo từ các biến này ---
+    # Model mặc định Groq nằm trong code (model_catalog); .env chỉ cần override.
     LLM_PROVIDER: str = "groq"
-    LLM_MODEL: str = "qwen/qwen3.8-27b"
+    LLM_MODEL: str = "openai/gpt-oss-20b"
     LLM_API_KEY: str = ""
     LLM_BASE_URL: str = "https://api.groq.com/openai/v1"
     LLM_TEMPERATURE: float = 0.0
     LLM_TIMEOUT_SECONDS: float = 120.0
+    # Endpoint khởi động: env (biến LLM_* ở trên) | groq | custom (REMOTE_LLM_*)
+    LLM_ENDPOINT: Literal["env", "groq", "custom"] = "env"
+    # Key Groq riêng; bỏ trống thì dùng LLM_API_KEY khi LLM_BASE_URL là Groq.
+    GROQ_API_KEY: str = ""
+    # Endpoint ngoài điền sẵn cho UI, ví dụ Kaggle gateway: https://xxxx.ngrok-free.app/v1
+    REMOTE_LLM_BASE_URL: str = ""
+    REMOTE_LLM_API_KEY: str = ""
 
     # --- TARGET ---
     TARGET_HOST: str = "0.0.0.0"
@@ -76,10 +84,13 @@ class Settings(BaseSettings):
         """Hash cấu hình theo profile thực sự đang chạy (kể cả runtime override)."""
         import hashlib
 
+        from src.services import llm_runtime
+
+        endpoint = llm_runtime.get_active()
         payload = "|".join(
             [
-                self.LLM_PROVIDER,
-                self.LLM_MODEL,
+                endpoint.provider,
+                endpoint.model,
                 str(self.LLM_TEMPERATURE),
                 defense_profile,
                 self.CANARY_TOKEN,

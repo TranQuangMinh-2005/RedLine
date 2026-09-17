@@ -15,6 +15,7 @@ from src.guardrails import state as defense_state
 from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_messages
 from src.guardrails.output_filter import inspect_output
 from src.logging_config import audit_event, reset_request_context, set_request_context
+from src.services import llm_runtime
 from src.services.rate_limit import RateLimitExceeded, TokenBudgetExceeded, roe_budget
 
 router = APIRouter()
@@ -60,7 +61,7 @@ def chat(req: ChatRequest) -> ChatResponse:
                 mode=req.mode,
                 session_id=session_id,
                 reply=reply,
-                model=settings.LLM_MODEL,
+                model=llm_runtime.active_model(),
                 latency_s=round(time.monotonic() - started, 3),
                 total_tokens=0,
                 canary_leaked=False,

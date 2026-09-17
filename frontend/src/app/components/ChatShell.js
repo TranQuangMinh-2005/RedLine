@@ -19,6 +19,7 @@ import {
 
 import HomeMatchMascot from './_shared/HomeMatchMascot'
 import MarkdownMessage from './MarkdownMessage'
+import ModelPanel, { ModelSummary } from './ModelPanel'
 
 gsap.registerPlugin(useGSAP)
 
@@ -88,6 +89,8 @@ export default function ChatShell({ apiBase = '/api' }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [modelOpen, setModelOpen] = useState(false)
+  const [llmActive, setLlmActive] = useState(null)
 
   const scrollRef = useRef(null)
   const rootRef = useRef(null)
@@ -135,6 +138,7 @@ export default function ChatShell({ apiBase = '/api' }) {
         if (d.defense_profile) setProfile(d.defense_profile)
         if (d.target_config_hash) setConfigHash(d.target_config_hash)
         if (d.scenario_customer_id) setScenarioCustomerId(d.scenario_customer_id)
+        if (d.llm) setLlmActive(d.llm)
       })
       .catch(() => { /* backend chưa lên */ })
 
@@ -382,6 +386,9 @@ export default function ChatShell({ apiBase = '/api' }) {
               {MODES.find((option) => option.value === mode)?.description}
             </p>
             <p className="text-[10px] text-ink-400">Đổi chế độ sẽ mở hội thoại mới.</p>
+            <div className="pt-2">
+              <ModelSummary active={llmActive} disabled={busy} onOpen={() => setModelOpen(true)} />
+            </div>
           </div>
           <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
             <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-400">
@@ -712,6 +719,16 @@ export default function ChatShell({ apiBase = '/api' }) {
           </div>
         </aside>
       </div>
+
+      <ModelPanel
+        apiBase={apiBase}
+        open={modelOpen}
+        onClose={() => setModelOpen(false)}
+        onChanged={(data) => {
+          setLlmActive(data.active)
+          if (data.target_config_hash) setConfigHash(data.target_config_hash)
+        }}
+      />
     </div>
   )
 }

@@ -21,6 +21,7 @@ from src.guardrails import state as defense_state
 from src.guardrails.input_filter import BLOCKED_INPUT_REPLY, inspect_messages
 from src.guardrails.output_filter import inspect_output
 from src.logging_config import audit_event, reset_request_context, set_request_context
+from src.services import llm_runtime
 from src.services.rate_limit import RateLimitExceeded, TokenBudgetExceeded, roe_budget
 
 router = APIRouter()
@@ -45,13 +46,12 @@ class OpenAIChatRequest(BaseModel):
 @router.get("/")
 def root() -> dict[str, Any]:
     """Root endpoint hiển thị thông tin target."""
-    settings = get_settings()
     profile = defense_state.get_active_profile()
     return {
         "name": "RedLine Target — Customer Assistant",
         "version": "0.1.0",
         "status": "online",
-        "model": settings.LLM_MODEL,
+        "model": llm_runtime.active_model(),
         "defense_profile": profile.name,
         "endpoints": {
             "health": "/health",
@@ -67,8 +67,7 @@ def root() -> dict[str, Any]:
 @router.get("/models")
 def list_models() -> dict[str, Any]:
     """Danh sách mô hình chuẩn OpenAI format."""
-    settings = get_settings()
-    active_model = settings.LLM_MODEL
+    active_model = llm_runtime.active_model()
     models = [active_model, "qwen2.5:14b", "qwen3.8-27b", "default"]
 
     seen = set()
@@ -155,7 +154,7 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
         if input_decision.blocked:
             reply = BLOCKED_INPUT_REPLY
             total_tokens = 0
-            model_name = req.model or settings.LLM_MODEL
+            model_name = req.model or llm_runtime.active_model()
             canary_leaked = False
             raw_canary_detected = False
             delivered_canary_detected = False
@@ -182,7 +181,7 @@ def chat_completions(req: OpenAIChatRequest) -> Any:
             )
             reply = output_decision.text
             total_tokens = int(result.get("total_tokens", 0))
-            model_name = result.get("model", req.model or settings.LLM_MODEL)
+            model_name = result.get("model", req.model or llm_runtime.active_model())
             canary_leaked = target_agent.leaked_canary(reply)
             delivered_canary_detected = canary_leaked
             guardrail_blocked = output_decision.filtered

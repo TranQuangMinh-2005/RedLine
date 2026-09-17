@@ -154,6 +154,49 @@ RAG/guardrail chưa có xác thực: chỉ chia sẻ tunnel với người tham 
 Dùng **Stop session** khi xong để kết thúc phiên GPU. Không công khai notebook output
 hoặc artifact chứa dữ liệu thử nhạy cảm.
 
+## 3b. Chọn endpoint & model trên web, host model trên Kaggle
+
+Ở thanh bên trái, mục **Model → Đổi** mở panel chọn endpoint:
+
+| Endpoint | Nguồn | Ghi chú |
+|---|---|---|
+| **Groq** | `api.groq.com`, key từ `GROQ_API_KEY`/`LLM_API_KEY` | Mặc định `openai/gpt-oss-20b` (không cần `LLM_MODEL` trong `.env`) |
+| **Docker env** | `LLM_BASE_URL`/`LLM_MODEL` trong `.env` | Ví dụ Ollama trên host: `http://host.docker.internal:11434/v1` |
+| **Kaggle / URL** | URL OpenAI-compatible bất kỳ + API key | Nếu là RedLine Ollama gateway: có catalog, tải model kèm tiến trình, xóa model |
+
+Model nổi bật (kiểm tra bằng `python scripts/model_check.py --probe --ollama`):
+
+- Groq (có tool calling): `openai/gpt-oss-20b` (nhẹ, mặc định), `qwen/qwen3.8-27b`, `openai/gpt-oss-120b`.
+  Groq hiện không có Llama chat model — dùng Llama qua Ollama.
+- Ollama/Kaggle (nhẹ): `qwen3.5:4b`, `qwen3:4b`, `qwen3.5:9b`, `qwen3:8b`, `qwen2.5:7b`,
+  `llama3.2:3b`, `llama3.1:8b`; lớn hơn: `qwen2.5:14b`, `gpt-oss:20b`.
+
+Đổi model áp dụng cho toàn bộ target (giống đổi guardrail) và làm thay đổi `target_config_hash`.
+
+**Host model trên Kaggle** — [`notebooks/kaggle_ollama_gateway.ipynb`](notebooks/kaggle_ollama_gateway.ipynb):
+
+1. Attach Secrets `NGROK_AUTH_TOKEN` và `GATEWAY_TOKEN` (≥ 16 ký tự; nếu thiếu notebook tự sinh và in một lần).
+2. Chạy các cell; khi `ready`, notebook in **Base URL** (`https://…ngrok…/v1`).
+3. Trên web: **Kaggle / URL** → dán Base URL + token → **Kết nối** → tải model → **Dùng model này**.
+
+Gateway ([`src/gateway/ollama_gateway.py`](src/gateway/ollama_gateway.py)) yêu cầu
+`Authorization: Bearer <GATEWAY_TOKEN>` cho mọi route trừ `/health`:
+
+```text
+GET    /gateway/info              GPU, disk trống, version Ollama, model đang load
+GET    /gateway/catalog           model nổi bật + installed + job đang tải
+GET    /gateway/models            model đã cài
+DELETE /gateway/models/{model}    xóa model
+POST   /gateway/pulls {"model"}   bắt đầu tải (nền), trả job
+GET    /gateway/pulls[/{id}]      state, status, completed, total, percent, speed_bps
+DELETE /gateway/pulls/{id}        hủy tải
+GET|POST /v1/...                  proxy OpenAI API của Ollama
+```
+
+Trình duyệt không gọi thẳng Kaggle: backend proxy qua `/config/llm/gateway/*`, token chỉ nằm
+trong RAM của backend và không được trả ra API. Endpoint custom nhận URL do người dùng web nhập,
+nên backend sẽ gửi request tới URL đó — chỉ mở web cho người tham gia thử nghiệm.
+
 ## 4. Gọi Chat API
 
 Giao diện chat có bộ chọn **Agent / LLM thuần** ở thanh bên trái (trên điện thoại,

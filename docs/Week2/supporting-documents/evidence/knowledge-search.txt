@@ -1,0 +1,53 @@
+# Acceptance evidence — Week 2 knowledge base search
+
+- Date: 2026-09-18
+- Artifacts: `redteam/attacks/knowledge/knowledge_base.json`, `search.py`, `__init__.py`
+- knowledge_base.json sha256: 09c77fa7a3b75d43bac850bc1073dcb4f354d1ce131821a75cf34d949d29297c
+- Nội dung: 8 OWASP LLM Top 10 (scope), 5 MITRE ATLAS, 20 technique (map taxonomy + seed v3core)
+
+## 1. Search "prompt injection"
+
+```text
+$ python -m redteam.attacks.knowledge.search "prompt injection" --top 6
+SCORE  ID                         TYPE       NAME                                         LINKS
+  225  LLM01                      owasp      Prompt Injection                             prompt_injection.direct, prompt_injection.indirect, AML.T0051, AML.T0051.001
+  209  AML.T0051                  atlas      LLM Prompt Injection
+  121  TECH-RAG-INDIRECT          technique  Indirect injection through RAG               prompt_injection.indirect, LLM01, LLM08, AML.T0051.001
+  105  AML.T0051.001              atlas      LLM Prompt Injection: Indirect
+   71  TECH-PREFIX-COMPLETION     technique  Prefix injection and partial completion      prompt_injection.direct, LLM01, AML.T0051
+   71  TECH-RIP                   technique  Role-in-Prompt (RiP)                         prompt_injection.direct, LLM01, AML.T0051
+```
+
+## 2. Search "jailbreak"
+
+```text
+$ python -m redteam.attacks.knowledge.search jailbreak
+SCORE  ID                         TYPE       NAME                                         LINKS
+  198  TECH-ROLEPLAY              technique  Roleplay and game framing                    jailbreak.roleplay, LLM01, AML.T0054
+  190  AML.T0054                  atlas      LLM Jailbreak
+```
+
+## 3. Search theo tên kỹ thuật (tiếng Việt không dấu)
+
+```text
+$ python -m redteam.attacks.knowledge.search "role in prompt" --type technique --top 3
+SCORE  ID                         TYPE       NAME                                         LINKS
+  240  TECH-RIP                   technique  Role-in-Prompt (RiP)                         prompt_injection.direct, LLM01, AML.T0051
+   50  TECH-PREFIX-COMPLETION     technique  Prefix injection and partial completion      prompt_injection.direct, LLM01, AML.T0051
+   50  TECH-RAG-INDIRECT          technique  Indirect injection through RAG               prompt_injection.indirect, LLM01, LLM08, AML.T0051.001
+```
+
+## 4. Kiểm thử
+
+```text
+$ python -m pytest tests/test_knowledge_search.py -q
+.........                                                                [100%]
+9 passed in 0.08s
+```
+
+## Đối chiếu tiêu chí hoàn thành Tuần 2
+
+- Tìm "prompt injection" trả về nội dung liên quan: LLM01, AML.T0051, AML.T0051.001 và technique. ✔
+- Tìm "jailbreak" trả về AML.T0054 và technique roleplay. ✔
+- Kho có 10–20 ví dụ kỹ thuật (hiện tại 20), tìm kiếm theo tên kỹ thuật hoạt động. ✔
+- Không dùng secret/dữ liệu thật; chỉ dữ liệu mock và trích dẫn công khai (OWASP, MITRE ATLAS). ✔

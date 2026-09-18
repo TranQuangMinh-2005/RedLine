@@ -91,7 +91,9 @@ def test_gateway_notebook_cells_are_valid_and_have_no_outputs() -> None:
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    notebook = json.loads((root / "notebooks/kaggle_ollama_gateway.ipynb").read_text())
+    notebook = json.loads(
+        (root / "notebooks/kaggle_ollama_gateway.ipynb").read_text(encoding="utf-8")
+    )
     sources = ""
     for cell in notebook["cells"]:
         sources += "".join(cell["source"])

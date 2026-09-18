@@ -13,6 +13,7 @@ Hay trong Docker:
 from __future__ import annotations
 
 import time
+
 from fastapi import FastAPI
 
 from src.api.routers.chat import router as chat_router
@@ -21,10 +22,11 @@ from src.api.routers.guardrails import router as guardrails_router
 from src.api.routers.llm_config import router as llm_config_router
 from src.api.routers.openai_compat import router as openai_router
 from src.api.routers.rag import router as rag_router
+from src.api.routers.test_fixtures import router as test_fixtures_router
 from src.config import get_settings
-from src.logging_config import configure_logging
 from src.guardrails import llama_guard, prompt_guard
 from src.guardrails import state as defense_state
+from src.logging_config import configure_logging
 from src.services import llm_runtime
 
 app = FastAPI(
@@ -53,6 +55,7 @@ def health() -> dict:
         "llama_guard": llama_guard.get_config().enabled,
         "prompt_guard": prompt_guard.get_config().enabled,
         "scenario_customer_id": settings.SCENARIO_CUSTOMER_ID,
+        "prompt_version": settings.SYSTEM_PROMPT_VERSION,
     }
 
 
@@ -62,4 +65,5 @@ app.include_router(guardrails_router)
 app.include_router(llm_config_router)
 app.include_router(openai_router)
 app.include_router(rag_router)
+app.include_router(test_fixtures_router)
 configure_logging()

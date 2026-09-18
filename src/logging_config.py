@@ -7,6 +7,7 @@ import json
 import logging
 from contextvars import ContextVar, Token
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from src.config import get_settings
@@ -22,14 +23,38 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(redact(payload), ensure_ascii=False, sort_keys=True, default=str)
 
 
+def _has_stream_handler(logger: logging.Logger) -> bool:
+    return any(
+        isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler)
+        for handler in logger.handlers
+    )
+
+
+def _audit_file_handler(logger: logging.Logger, path: str) -> logging.FileHandler | None:
+    resolved = str(Path(path).expanduser().resolve())
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler) and handler.baseFilename == resolved:
+            return None
+    Path(resolved).parent.mkdir(parents=True, exist_ok=True)
+    handler = logging.FileHandler(resolved, encoding="utf-8")
+    handler.setFormatter(JsonFormatter())
+    return handler
+
+
 def configure_logging() -> logging.Logger:
     logger = logging.getLogger(LOGGER_NAME)
-    logger.setLevel(getattr(logging, get_settings().LOG_LEVEL.upper(), logging.INFO))
-    if not logger.handlers:
+    settings = get_settings()
+    logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
+    if not _has_stream_handler(logger):
         handler = logging.StreamHandler()
         handler.setFormatter(JsonFormatter())
         logger.addHandler(handler)
-        logger.propagate = False
+    audit_path = getattr(settings, "AUDIT_LOG_PATH", "") or ""
+    if audit_path:
+        file_handler = _audit_file_handler(logger, audit_path)
+        if file_handler is not None:
+            logger.addHandler(file_handler)
+    logger.propagate = False
     return logger
 
 

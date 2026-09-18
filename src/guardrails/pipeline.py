@@ -49,6 +49,9 @@ class PipelineOutcome:
     guardrail_actions: list[str]
     raw_canary_detected: bool
     delivered_canary_detected: bool
+    provider: str | None = None
+    provider_slot: str | None = None
+    provider_attempts: list[str] = field(default_factory=list)
     trace: dict[str, Any] = field(default_factory=dict)
 
 
@@ -346,5 +349,7 @@ def run_turn(
         reply=reply, model=result["model"], latency_s=float(result["latency_s"]),
         total_tokens=int(result["total_tokens"]), guardrail_blocked=blocked, guardrail_actions=actions,
         raw_canary_detected=raw_canary_detected, delivered_canary_detected=target_agent.leaked_canary(reply),
+        provider=result.get("provider"), provider_slot=result.get("provider_slot"),
+        provider_attempts=list(result.get("provider_attempts") or []),
         trace=trace,
     )

@@ -7,6 +7,10 @@ services:
       POSTGRES_DB: redline
     expose:
       - "5432"
+    # Mở ra localhost cho harness thu evidence `database`:
+    #   --database postgresql://redline:redline@localhost:5433/redline
+    ports:
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -30,6 +34,9 @@ services:
       # Llama Guard chạy local trong service llama-guard (make llama-guard-up)
       LLAMA_GUARD_BASE_URL: ${LLAMA_GUARD_BASE_URL:-http://llama-guard:8080/v1}
       PROMPT_GUARD_URL: ${PROMPT_GUARD_URL:-http://prompt-guard:8000}
+      ENABLE_TEST_FIXTURES: "true"
+      ENABLE_TOOLS: ${ENABLE_TOOLS:-true}
+      AUDIT_LOG_PATH: data/audit.jsonl
     # Cho phép endpoint http://host.docker.internal:11434/v1 (Ollama trên máy host)
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     # Endpoint ngoài điền sẵn cho UI, ví dụ Kaggle gateway: https://xxxx.ngrok-free.app/v1
     REMOTE_LLM_BASE_URL: str = ""
     REMOTE_LLM_API_KEY: str = ""
+    # primary: only primary; round_robin: alternate; failover: primary then secondary.
+    LLM_ROUTING_MODE: Literal["primary", "round_robin", "failover"] = "primary"
+    LLM_SECONDARY_PROVIDER: str = ""
+    LLM_SECONDARY_MODEL: str = ""
+    LLM_SECONDARY_API_KEY: str = ""
+    LLM_SECONDARY_BASE_URL: str = ""
 
     # --- TARGET ---
     TARGET_HOST: str = "0.0.0.0"
@@ -51,6 +57,14 @@ class Settings(BaseSettings):
     # Một actor mock cố định cho toàn bộ benchmark. Đây là danh tính scenario,
     # không phải dữ liệu do prompt của attacker cung cấp.
     SCENARIO_CUSTOMER_ID: str = "CUS-001"
+    # Phiên bản system prompt của target. Tăng giá trị này mỗi khi prompt đổi để
+    # target_config_hash tách được kết quả của các phiên bản prompt khác nhau.
+    SYSTEM_PROMPT_VERSION: str = "weak-none-2026-09-17"
+    # Chỉ bật trong sandbox benchmark để harness tạo fixture có kiểm soát.
+    ENABLE_TEST_FIXTURES: bool = False
+    # Tắt để chạy target như chatbot thuần (model unrestricted không hỗ trợ tool calling).
+    # Mặc định true để giữ nguyên hành vi agent đầy đủ.
+    ENABLE_TOOLS: bool = True
 
     # --- RAG ---
     RAG_COLLECTION: str = "redline_docs"
@@ -94,6 +108,9 @@ class Settings(BaseSettings):
     # --- LOGGING ---
     LOG_LEVEL: str = "INFO"
     REDACT_SECRETS: bool = True
+    # Đường dẫn ghi audit JSONL để harness đọc evidence (audit_log/retrieval_log).
+    # Rỗng nghĩa là chỉ ghi ra stdout như trước.
+    AUDIT_LOG_PATH: str = ""
 
     # --- NGROK (cho Kaggle / remote tunnel) ---
     NGROK_AUTHTOKEN: str = ""
@@ -120,18 +137,28 @@ class Settings(BaseSettings):
         parts = [
             endpoint.provider,
             endpoint.model,
+            endpoint.base_url,
+            self.LLM_ROUTING_MODE,
+            self.LLM_SECONDARY_PROVIDER,
+            self.LLM_SECONDARY_MODEL,
+            self.LLM_SECONDARY_BASE_URL,
             str(self.LLM_TEMPERATURE),
             defense_profile,
             self.CANARY_TOKEN,
             self.SCENARIO_CUSTOMER_ID,
+            self.SYSTEM_PROMPT_VERSION,
+            str(self.ENABLE_TOOLS),
         ]
         if guard.enabled:
-            # Chỉ thêm khi bật để hash của các run cũ (không Llama Guard) giữ nguyên.
-            parts.append(f"llama_guard={guard.model}{'+output' if guard.check_output else ''}")
+            parts.append(
+                f"llama_guard={guard.model}{'+output' if guard.check_output else ''}"
+                f"@{guard.fail_mode}"
+            )
         if injection_guard.enabled:
             parts.append(
                 f"prompt_guard={injection_guard.model}@{injection_guard.threshold}"
                 f"{'+rag' if injection_guard.check_rag else ''}"
+                f"@{injection_guard.fail_mode}"
             )
         payload = "|".join(parts)
         return hashlib.sha256(payload.encode()).hexdigest()[:16]

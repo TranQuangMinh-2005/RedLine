@@ -1,0 +1,68 @@
+{
+ "id": "R20",
+ "surface": "Endpoint",
+ "probing": "Đọc cấu hình phòng thủ khi KHÔNG xác thực",
+ "request": {
+  "method": "GET",
+  "path": "/config/defense-profile",
+  "payload": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "date": "Thu, 17 Sep 2026 08:09:01 GMT",
+   "server": "uvicorn",
+   "content-length": "813",
+   "content-type": "application/json",
+   "connection": "close"
+  },
+  "body": {
+   "active": "none",
+   "default_from_env": "none",
+   "target_config_hash": "5f37e6f455e977ea",
+   "scenario_customer_id": "CUS-001",
+   "capabilities": {
+    "input_filter": false,
+    "output_filter": false,
+    "prompt_hardening": false,
+    "canary_check": false,
+    "tool_authorization": false,
+    "rag_filter": false,
+    "action_policy": false
+   },
+   "options": [
+    {
+     "name": "basic",
+     "input_filter": true,
+     "output_filter": false,
+     "prompt_hardening": true,
+     "canary_check": true,
+     "tool_authorization": true,
+     "rag_filter": false,
+     "action_policy": false
+    },
+    {
+     "name": "none",
+     "input_filter": false,
+     "output_filter": false,
+     "prompt_hardening": false,
+     "canary_check": false,
+     "tool_authorization": false,
+     "rag_filter": false,
+     "action_policy": false
+    },
+    {
+     "name": "strict",
+     "input_filter": true,
+     "output_filter": true,
+     "prompt_hardening": true,
+     "canary_check": true,
+     "tool_authorization": true,
+     "rag_filter": true,
+     "action_policy": true
+    }
+   ]
+  },
+  "latency_s": 0.0
+ }
+}

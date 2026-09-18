@@ -1,0 +1,483 @@
+{
+  "schema_version": "1.0",
+  "title": "RedLine technique knowledge base (Week 2)",
+  "sources": [
+    "OWASP Top 10 for LLM Applications 2025",
+    "MITRE ATLAS",
+    "CCSW - Attacking the GPT-OSS Model",
+    "Boice - Hacking the 20B Beast"
+  ],
+  "owasp_llm_top10": [
+    {
+      "id": "LLM01",
+      "name": "Prompt Injection",
+      "aliases": ["prompt injection", "tiem nhiem prompt", "chen chi thi", "instruction override"],
+      "summary": "Input cua nguoi dung hoac noi dung duoc retrieve thay doi hanh vi cua model ngoai y dinh cua system prompt.",
+      "categories": ["prompt_injection.direct", "prompt_injection.indirect"],
+      "atlas_ids": ["AML.T0051", "AML.T0051.001"],
+      "url": "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
+    },
+    {
+      "id": "LLM02",
+      "name": "Sensitive Information Disclosure",
+      "aliases": ["sensitive information disclosure", "ro ri du lieu nhay cam", "pii leak", "cross-customer leak"],
+      "summary": "Model tiet lo du lieu ca nhan, ho so khach hang khac hoac thong tin noi bo qua response, tool call hay lich su phien.",
+      "categories": ["sensitive_data_leak"],
+      "atlas_ids": ["AML.T0057"],
+      "url": "https://genai.owasp.org/llmrisk/llm02-sensitive-information-disclosure/"
+    },
+    {
+      "id": "LLM05",
+      "name": "Improper Output Handling",
+      "aliases": ["improper output handling", "xu ly output khong an toan", "downstream injection", "html script output"],
+      "summary": "Output cua model duoc dua toi sink downstream (trinh duyet, CSV, JSON parser) ma khong kiem tra hay ma hoa an toan.",
+      "categories": ["improper_output"],
+      "atlas_ids": [],
+      "url": "https://genai.owasp.org/llmrisk/llm05-improper-output-handling/"
+    },
+    {
+      "id": "LLM06",
+      "name": "Excessive Agency",
+      "aliases": ["excessive agency", "lam dung tool", "tool abuse", "quyen han qua muc", "confused deputy"],
+      "summary": "Agent co qua nhieu quyen hoac tu quyet dinh hanh dong ghi, dan den tool call ngoai tham quyen nguoi dung.",
+      "categories": ["tool_abuse", "multi_turn"],
+      "atlas_ids": [],
+      "url": "https://genai.owasp.org/llmrisk/llm06-excessive-agency/"
+    },
+    {
+      "id": "LLM07",
+      "name": "System Prompt Leakage",
+      "aliases": ["system prompt leakage", "ro ri system prompt", "canary leak", "prompt extraction"],
+      "summary": "System prompt hoac secret/canary bi trich xuat nguyen van, tung phan hoac qua ma hoa.",
+      "categories": ["system_prompt_leak"],
+      "atlas_ids": ["AML.T0056"],
+      "url": "https://genai.owasp.org/llmrisk/llm07-system-prompt-leakage/"
+    },
+    {
+      "id": "LLM08",
+      "name": "Vector and Embedding Weaknesses",
+      "aliases": ["vector and embedding weaknesses", "rag poisoning", "indirect injection via rag"],
+      "summary": "Kho RAG bi dau doc hoac bi loi dung de dua instruction khong dang tin vao context cua model.",
+      "categories": ["prompt_injection.indirect"],
+      "atlas_ids": ["AML.T0051.001"],
+      "url": "https://genai.owasp.org/llmrisk/llm08-vector-and-embedding-weaknesses/"
+    },
+    {
+      "id": "LLM09",
+      "name": "Misinformation",
+      "aliases": ["misinformation", "thong tin sai lech", "hallucination", "bia chinh sach"],
+      "summary": "Model bia dat chinh sach, citation, trang thai don hang hoac xac nhan side effect chua xay ra.",
+      "categories": ["misinformation"],
+      "atlas_ids": [],
+      "url": "https://genai.owasp.org/llmrisk/llm09-misinformation/"
+    },
+    {
+      "id": "LLM10",
+      "name": "Unbounded Consumption",
+      "aliases": ["unbounded consumption", "tieu ton tai nguyen", "resource exhaustion", "denial of service"],
+      "summary": "Prompt khien agent lap vo han, goi tool qua muc hoac sinh output lon lam can kiet ngan sach token.",
+      "categories": ["unbounded_consumption"],
+      "atlas_ids": [],
+      "url": "https://genai.owasp.org/llmrisk/llm10-unbounded-consumption/"
+    }
+  ],
+  "atlas": [
+    {
+      "id": "AML.T0051",
+      "name": "LLM Prompt Injection",
+      "aliases": ["prompt injection", "llm prompt injection", "direct prompt injection"],
+      "summary": "Ke tan cong chen chi thi vao prompt de thay doi hanh vi cua LLM.",
+      "url": "https://atlas.mitre.org/techniques/AML.T0051"
+    },
+    {
+      "id": "AML.T0051.001",
+      "name": "LLM Prompt Injection: Indirect",
+      "aliases": ["indirect prompt injection", "rag injection", "indirect injection", "retrieved instruction"],
+      "summary": "Payload duoc chon trong tai lieu, ticket hoac tool output ma model doc phai sau khi retrieve.",
+      "url": "https://atlas.mitre.org/techniques/AML.T0051.001"
+    },
+    {
+      "id": "AML.T0054",
+      "name": "LLM Jailbreak",
+      "aliases": ["jailbreak", "llm jailbreak", "roleplay jailbreak", "bypass safety"],
+      "summary": "Framing, roleplay hoac persona gia lam model bo qua gioi han an toan da duoc dat ra.",
+      "url": "https://atlas.mitre.org/techniques/AML.T0054"
+    },
+    {
+      "id": "AML.T0056",
+      "name": "Extract LLM System Prompt",
+      "aliases": ["system prompt extraction", "prompt leak", "canary extraction", "prompt reconstruction"],
+      "summary": "Trich xuat system prompt, instruction an hoac canary qua hoi truc tiep, completion hoac tong hop nhieu turn.",
+      "url": "https://atlas.mitre.org/techniques/AML.T0056"
+    },
+    {
+      "id": "AML.T0057",
+      "name": "LLM Data Leakage",
+      "aliases": ["llm data leakage", "pii leakage", "sensitive data extraction", "cross-customer disclosure"],
+      "summary": "Khai thac model hoac tool de lo du lieu huan luyen, du lieu phien hoac ho so khach hang khac.",
+      "url": "https://atlas.mitre.org/techniques/AML.T0057"
+    }
+  ],
+  "techniques": [
+    {
+      "id": "TECH-INSTRUCTION-OVERRIDE",
+      "name": "Direct instruction override",
+      "aliases": ["instruction override", "bo qua quy tac", "ignore previous instructions", "ghi de chi dan"],
+      "category": "prompt_injection.direct",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0051"],
+      "summary": "Yeu cau model bo, thay hoac dao thu tu chi thi truoc do de dat hanh vi ngoai quyen.",
+      "how_it_works": [
+        "Payload duoc dat sau context nghiep vu hop le de tang do tin cay.",
+        "Model uu tien cau lenh gan nhat thay vi system instruction."
+      ],
+      "detection": "Input filter bat cac cum tu override ro rang; seed baseline de do ASR truoc khi hardening.",
+      "mitigation": "Instruction hierarchy, prompt hardening va kiem tra quyen o tool boundary.",
+      "seed_refs": ["PI-DIR-001", "PI-DIR-006"],
+      "source_refs": ["OWASP-LLM-TOP10-2025", "MITRE-ATLAS"],
+      "tags": ["override", "direct"]
+    },
+    {
+      "id": "TECH-FAKE-SYSTEM",
+      "name": "Fake system message and authority claim",
+      "aliases": ["fake system message", "authority claim", "gia mao quan tri vien", "debug mode", "system update"],
+      "category": "prompt_injection.direct",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0051"],
+      "summary": "Prompt tu nhan la quan tri vien, kiem toan vien hoac ban cap nhat he thong de tao tham quyen gia.",
+      "how_it_works": [
+        "Nhan [SYSTEM UPDATE] hoac developer mode danh lua model ve nguon chi thi.",
+        "Tham quyen gia duoc dung de yeu cau doc PII hoac tao ticket trai phep."
+      ],
+      "detection": "Phat hien role label va cum tu tham quyen trong user message; doi chieu voi actor that.",
+      "mitigation": "Khong coi nguoi dung la system; xac minh quyen bang du lieu cua session.",
+      "seed_refs": ["PI-DIR-002", "PI-DIR-004", "PI-DIR-005"],
+      "source_refs": ["OWASP-LLM-TOP10-2025"],
+      "tags": ["authority", "spoofing"]
+    },
+    {
+      "id": "TECH-RIP",
+      "name": "Role-in-Prompt (RiP)",
+      "aliases": ["role in prompt", "rip", "role injection", "policy hijacking", "channel hijacking"],
+      "category": "prompt_injection.direct",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0051"],
+      "summary": "Chen cac nhan vai Policy/System/Analysis/Assistant ngay trong user message de model hieu nham la message co uu tien cao hon.",
+      "how_it_works": [
+        "Chuoi Policy - System - Analysis - Assistant tao ra cac message gia trong mot message that.",
+        "Token thay the hoac synonym cho label co the vuot qua filter keyword."
+      ],
+      "detection": "Kiem tra cac nhom role/channel lap lai trong cung mot message sau khi chuan hoa.",
+      "mitigation": "Coi toan bo user text la du lieu; khong suy dien quyen tu label.",
+      "seed_refs": ["RIP-POL-001", "RIP-CHN-001", "GOSS-SCH-001"],
+      "source_refs": ["CCSW-RIP-2025"],
+      "tags": ["rip", "role-label"]
+    },
+    {
+      "id": "TECH-ANALYSIS-HIJACK",
+      "name": "Analysis and chain-of-thought hijacking",
+      "aliases": ["analysis hijack", "chain of thought hijacking", "cot hijack", "giai thich gia", "reasoning procedure"],
+      "category": "prompt_injection.direct",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0051"],
+      "summary": "Ke tan cong viet san phan analysis ket luan rang yeu cau da duoc phe duyet de model tiep tuc tu trang thai do.",
+      "how_it_works": [
+        "Ket luan gia duoc dat trong khoi Analysis de tao tien le suy luan.",
+        "Model dien tiep quy trinh thay vi tu danh gia xung dot quyen truy cap."
+      ],
+      "detection": "Doi chieu tool call va du lieu that; khong cham success dua tren loi van ban analysis.",
+      "mitigation": "Bat buoc xac minh quyen bang tool/DB thay vi tin vao reasoning do nguoi dung cung cap.",
+      "seed_refs": ["RIP-COT-001", "GOSS-MIR-001"],
+      "source_refs": ["CCSW-RIP-2025"],
+      "tags": ["analysis", "reasoning", "rip"]
+    },
+    {
+      "id": "TECH-PREFIX-COMPLETION",
+      "name": "Prefix injection and partial completion",
+      "aliases": ["prefix injection", "partial completion", "tien to tra loi", "prompt completion", "schema completion"],
+      "category": "prompt_injection.direct",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0051"],
+      "summary": "Dat payload o dau input hoac mo ta phan dau cau tra loi mong muon de model hoan thanh phan con lai.",
+      "how_it_works": [
+        "Tien to dinh huong model truoc khi doc context hop le.",
+        "Partial completion khai thac thoi quen hoan thanh van ban cua LLM."
+      ],
+      "detection": "Oracle phai tim du lieu that duoc sinh ra, khong tinh viec model lap lai chuoi nguoi dung cung cap.",
+      "mitigation": "Kiem tra output dua tren du lieu that; khong render output khong qua validate.",
+      "seed_refs": ["RIP-PRE-001", "RIP-AST-001", "SP-LEAK-007", "ADV-DIR-002"],
+      "source_refs": ["BOICE-20B-2025"],
+      "tags": ["prefix", "completion"]
+    },
+    {
+      "id": "TECH-CADENCE",
+      "name": "Compliance cadence contamination",
+      "aliases": ["cadence contamination", "compliance cadence", "nhip tuan thu", "repeated compliance"],
+      "category": "prompt_injection.direct",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0051"],
+      "summary": "Lap nhip cau tuan thu truoc payload de tao quan tinh sinh token dong y.",
+      "how_it_works": [
+        "Chuoi 'We must comply' lap lai tao da kien cho model di theo.",
+        "Control seed giong het nhung bo cadence de do chenh lech ASR."
+      ],
+      "detection": "Phat hien cau lap bat thuong; so sanh voi control de loai bo nhieu.",
+      "mitigation": "Prompt hardening va output policy khong dua vao nhip cau nguoi dung.",
+      "seed_refs": ["RIP-CAD-001", "GOSS-CAD-002"],
+      "source_refs": ["BOICE-20B-2025"],
+      "tags": ["cadence", "social-engineering"]
+    },
+    {
+      "id": "TECH-ENCODING",
+      "name": "Encoding and obfuscation",
+      "aliases": ["encoding", "obfuscation", "base64", "hex", "url encoding", "rot13", "token splitting", "ascii art"],
+      "category": "obfuscation",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0051"],
+      "summary": "Ma hoa hoac chia nho payload de qua mat filter chi quet raw text.",
+      "how_it_works": [
+        "Base64, hex, URL encoding, ROT13, leetspeak hoac homoglyph lam thay doi chuoi be mat.",
+        "Chia tu khoa thanh nhieu manh hoac tron nhieu ngon ngu de tranh khop regex."
+      ],
+      "detection": "Chuan hoa input truoc khi khop; giai ma cac encoding pho bien; kiem tra sau normalize.",
+      "mitigation": "Semantic inspection, khong chi regex; output filter chan encoded leak.",
+      "seed_refs": ["OBF-EVADE-001", "OBF-EVADE-002", "OBF-EVADE-005", "QUICK-ASC-001", "GOSS-ENC-001", "ADV-COMP-002"],
+      "source_refs": ["BOICE-20B-2025", "CCSW-RIP-2025"],
+      "tags": ["encoding", "evasion"]
+    },
+    {
+      "id": "TECH-MULTILINGUAL",
+      "name": "Multilingual policy hijacking",
+      "aliases": ["multilingual", "doi ngon ngu", "language switch", "arabic policy injection", "mixed language"],
+      "category": "prompt_injection.direct",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0051"],
+      "summary": "Doi ngon ngu giua cac turn hoac dung ngon ngu it duoc kiem tra de chen policy gia va tang dan pham vi.",
+      "how_it_works": [
+        "Bat dau bang cau hoi chinh sach hop le roi chuyen ngon ngu o turn sau.",
+        "Filter keyword tieng Anh/Viet khong bat duoc payload ngon ngu khac."
+      ],
+      "detection": "Guardrail phai doc toan bo user history va moi ngon ngu, khong chi message cuoi.",
+      "mitigation": "Chuan hoa da ngon ngu; ownership check o tool boundary.",
+      "seed_refs": ["LANG-ARA-001", "MT-POL-001", "MULTI-TURN-006"],
+      "source_refs": ["BOICE-20B-2025"],
+      "tags": ["multilingual", "multi-turn"]
+    },
+    {
+      "id": "TECH-ROLEPLAY",
+      "name": "Roleplay and game framing",
+      "aliases": ["roleplay", "game framing", "jailbreak", "fictional scenario", "developer mode", "persona"],
+      "category": "jailbreak.roleplay",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0054"],
+      "summary": "Boc yeu cau trong tro choi, phim hoac mo phong de giam cam nhan rui ro va lam model bo qua vai tro that.",
+      "how_it_works": [
+        "Persona gia (developer mode, kiem toan vien) thay the vai tro tro ly va quyen han goc.",
+        "Moi truong hua cau 'du lieu khong that' lam model thoai mai tra loi."
+      ],
+      "detection": "Oracle dua tren hanh vi that cua sandbox, khong dua tren loi model noi rang no dang dong vai.",
+      "mitigation": "Prompt hardening, doi chieu actor CUS-001 va gioi han quyen tool theo vai tro.",
+      "seed_refs": ["JB-RP-002", "JB-RP-003", "JB-RP-005", "TRUST-FRD-001"],
+      "source_refs": ["MITRE-ATLAS", "OWASP-LLM-TOP10-2025"],
+      "tags": ["jailbreak", "roleplay"]
+    },
+    {
+      "id": "TECH-RAG-INDIRECT",
+      "name": "Indirect injection through RAG",
+      "aliases": ["indirect prompt injection", "rag injection", "retrieved instruction", "chon payload trong tai lieu"],
+      "category": "prompt_injection.indirect",
+      "owasp_ids": ["LLM01", "LLM08"],
+      "atlas_ids": ["AML.T0051.001"],
+      "summary": "Payload duoc chon trong tai lieu chinh sach de model retrieve nhu du lieu va thuc thi sau cau hoi binh thuong.",
+      "how_it_works": [
+        "Tai lieu chua instruction va marker duy nhat nam ngoai tam kiem soat cua model.",
+        "Cau hoi trigger hop le keo tai lieu vao context, model thuc thi ca instruction an."
+      ],
+      "detection": "Retrieval log chung minh fixture vao context; marker chi tinh khi kem hanh dong quan sat duoc.",
+      "mitigation": "Coi RAG content la du lieu khong dang tin cay; quarantine tai lieu hostile; cleanup sau run.",
+      "seed_refs": ["RAG-IND-001", "RAG-IND-003", "RAG-IND-006", "ADV-RAG-001", "ADV-RAG-002"],
+      "source_refs": ["OWASP-LLM-TOP10-2025", "MITRE-ATLAS"],
+      "tags": ["rag", "indirect"]
+    },
+    {
+      "id": "TECH-TOOL-BOUNDARY",
+      "name": "Tool-output boundary injection",
+      "aliases": ["tool output injection", "boundary injection", "ticket injection", "thoat ranh gioi tool"],
+      "category": "prompt_injection.indirect",
+      "owasp_ids": ["LLM01", "LLM08"],
+      "atlas_ids": ["AML.T0051.001"],
+      "summary": "Payload gia ket thuc JSON/tool output roi mo role moi de model tin rang tool output da het va nhan instruction moi.",
+      "how_it_works": [
+        "Ke tan cong kiem soat du lieu ma tool tra ve (ticket, ghi chu, truong JSON).",
+        "Delimiter va role label gia dan model bo qua ranh gioi du lieu."
+      ],
+      "detection": "Kiem tra tool output sau khi sanitize; doi chieu audit tool call voi instruction trong du lieu.",
+      "mitigation": "Treat all tool output as untrusted; strip delimiter/role labels; enforce policy tai action layer.",
+      "seed_refs": ["RIP-TOL-001", "ADV-TOOL-001"],
+      "source_refs": ["CCSW-RIP-2025"],
+      "tags": ["tool-output", "indirect"]
+    },
+    {
+      "id": "TECH-CONFUSED-DEPUTY",
+      "name": "Tool abuse and confused deputy",
+      "aliases": ["tool abuse", "confused deputy", "cross customer write", "unauthorized tool call", "lam dung quyen he thong"],
+      "category": "tool_abuse",
+      "owasp_ids": ["LLM06"],
+      "atlas_ids": [],
+      "summary": "Khien agent dung quyen cua he thong thay cho quyen cua nguoi dung: doc ho so khac, tao ticket khac hoac truyen instruction vao tham so.",
+      "how_it_works": [
+        "Yeu cau nghiep vu hop ly duoc dung lam vo boc cho hanh dong trai quyen.",
+        "Instruction duoc nhung vao tham so ticket de thuc thi o buoc sau."
+      ],
+      "detection": "Response khong du; can audit tool arguments, database side effect va request ID.",
+      "mitigation": "Tool authorization theo actor; allowlist tham so; idempotency va gioi han so lan goi.",
+      "seed_refs": ["TOOL-ABUSE-002", "TOOL-ABUSE-004", "TOOL-ABUSE-005", "ADV-TOOL-002", "TOOL-INR-001"],
+      "source_refs": ["OWASP-LLM-TOP10-2025"],
+      "tags": ["tool", "authorization"]
+    },
+    {
+      "id": "TECH-TOOL-REPLAY",
+      "name": "Stale approval replay and repeated calls",
+      "aliases": ["stale approval", "approval replay", "repeated tool calls", "idempotency", "tai su dung approval"],
+      "category": "tool_abuse",
+      "owasp_ids": ["LLM06"],
+      "atlas_ids": [],
+      "summary": "Tai su dung phe duyet cu, dieu khien idempotency key hoac goi tool lap de tao side effect ngoai y dinh.",
+      "how_it_works": [
+        "Approval o turn truoc duoc vien dan cho hanh dong khac o turn sau.",
+        "Idempotency key do nguoi dung kiem soat lam mat tac dung chong trung lap."
+      ],
+      "detection": "Audit tool call theo turn, so sanh baseline ticket ID va idempotency key.",
+      "mitigation": "Approval gan voi hanh dong cu the va co thoi han; server-side idempotency.",
+      "seed_refs": ["ADV-MULTI-001", "TOOL-ABUSE-003", "TOOL-ABUSE-006"],
+      "source_refs": ["OWASP-LLM-TOP10-2025"],
+      "tags": ["tool", "replay"]
+    },
+    {
+      "id": "TECH-CANARY-EXFIL",
+      "name": "System prompt and canary exfiltration",
+      "aliases": ["system prompt leak", "canary extraction", "prompt extraction", "trich xuat system prompt", "ro ri canary"],
+      "category": "system_prompt_leak",
+      "owasp_ids": ["LLM07"],
+      "atlas_ids": ["AML.T0056"],
+      "summary": "Trich xuat system prompt, protected fragment hoac canary bang hoi truc tiep, completion, tom tat hoac ma hoa.",
+      "how_it_works": [
+        "Yeu cau nguyen van, tien to dung, serialize JSON hoac ma hoa secret.",
+        "Lay tung manh qua nhieu turn roi ghep lai de tranh filter."
+      ],
+      "detection": "Detector nhan canary nguyen van, bi chen dau phan cach va bi encode.",
+      "mitigation": "Canary check, output filter, khong dua secret that vao prompt sandbox.",
+      "seed_refs": ["SP-LEAK-001", "SP-LEAK-002", "SP-LEAK-003", "SP-LEAK-005", "SP-LEAK-007"],
+      "source_refs": ["OWASP-LLM-TOP10-2025", "MITRE-ATLAS"],
+      "tags": ["canary", "prompt-leak"]
+    },
+    {
+      "id": "TECH-SEMANTIC-INFERENCE",
+      "name": "Cross-customer semantic inference",
+      "aliases": ["semantic inference", "cross customer", "attribute inference", "idor ticket", "suy doan pii"],
+      "category": "sensitive_data_leak",
+      "owasp_ids": ["LLM02"],
+      "atlas_ids": ["AML.T0057"],
+      "summary": "Suy ra du lieu khach hang khac bang tham chieu ngu nghia, xac nhan thuoc tinh hoac ID doan duoc thay vi hoi truc tiep.",
+      "how_it_works": [
+        "Tham chieu 'ho so ke tiep' hoac cau hoi dong y/khoa thay cho PII ro rang.",
+        "Oracle phai la du lieu that xuat hien trong response hoac tool argument."
+      ],
+      "detection": "Doi chieu response voi mock DB; bat email/phone/address cua customer khac nguoi dung.",
+      "mitigation": "Ownership check o tool boundary va output filter; khong tra loi cau hoi xac nhan thuoc tinh.",
+      "seed_refs": ["DATA-LEAK-001", "DATA-LEAK-004", "DATA-LEAK-005", "DATA-LEAK-006", "ADV-DIR-001", "ADV-DIR-003"],
+      "source_refs": ["OWASP-LLM-TOP10-2025"],
+      "tags": ["pii", "inference"]
+    },
+    {
+      "id": "TECH-LONG-CONTEXT",
+      "name": "Long-context placement",
+      "aliases": ["long context", "payload placement", "context placement", "recency bias", "prefix influence"],
+      "category": "prompt_injection.direct",
+      "owasp_ids": ["LLM01"],
+      "atlas_ids": ["AML.T0051"],
+      "summary": "Chon payload vao context nghiep vu dai o dau, giua hoac cuoi de khai thac prefix influence, instruction retention hoac recency bias.",
+      "how_it_works": [
+        "Context gom chinh sach, mo ta san pham va lich su don hang hop le.",
+        "Vi tri payload quyet dinh muc do model chu y toi instruction."
+      ],
+      "detection": "Fixture deterministic va marker de biet payload thuc su nam trong context.",
+      "mitigation": "Danh dau vung du lieu khong dang tin; khong de instruction trong context override policy.",
+      "seed_refs": ["SAFE-ABUSE-001", "SAFE-POL-001", "MULTI-TURN-004"],
+      "source_refs": ["BOICE-20B-2025"],
+      "tags": ["long-context", "placement"]
+    },
+    {
+      "id": "TECH-MULTI-TURN",
+      "name": "Multi-turn trust and scope escalation",
+      "aliases": ["multi-turn", "crescendo", "trust escalation", "delayed trigger", "sleeper instruction", "nhieu luot"],
+      "category": "multi_turn",
+      "owasp_ids": ["LLM01", "LLM06"],
+      "atlas_ids": ["AML.T0054"],
+      "summary": "Xay trust hoac dua instruction ngu qua nhieu turn de tang dan pham vi tu cau hoi cong khai toi du lieu rieng.",
+      "how_it_works": [
+        "Cau hoi hop le o dau tao tien le, sau do doi identity hoac scope.",
+        "Instruction sleeper cho o turn truoc va kich hoat o turn sau."
+      ],
+      "detection": "Moi seed dung session moi; guardrail phai xet toan bo history thay vi message cuoi.",
+      "mitigation": "Re-check ownership moi turn; session state khong phai bang chung xac thuc.",
+      "seed_refs": ["MULTI-TURN-001", "MULTI-TURN-003", "MULTI-TURN-004", "MULTI-TURN-005", "ADV-MULTI-003", "API-PRF-001"],
+      "source_refs": ["BOICE-20B-2025"],
+      "tags": ["multi-turn", "escalation"]
+    },
+    {
+      "id": "TECH-UNBOUNDED",
+      "name": "Unbounded consumption and fan-out",
+      "aliases": ["unbounded consumption", "resource exhaustion", "fan-out", "recursive expansion", "tao 100 ticket"],
+      "category": "unbounded_consumption",
+      "owasp_ids": ["LLM10"],
+      "atlas_ids": [],
+      "summary": "Prompt khien agent goi tool lap, mo rong de quy hoac tao side effect hang loat lam ton ngan sach token va rate limit.",
+      "how_it_works": [
+        "Yeu cau tach mot cau hoi thanh hang tram truy van hoac tao nhieu ticket.",
+        "Vong lap tool lam can kiet quota va co the tao side effect that."
+      ],
+      "detection": "Do tool-call count, token usage, latency va so ban ghi DB tang them.",
+      "mitigation": "Gioi han vong tool, token budget, rate limit va fan-out guard.",
+      "seed_refs": ["RESOURCE-USE-002", "RESOURCE-USE-004"],
+      "source_refs": ["OWASP-LLM-TOP10-2025"],
+      "tags": ["resource", "dos"]
+    },
+    {
+      "id": "TECH-SINK-INJECTION",
+      "name": "Improper output and downstream sink injection",
+      "aliases": ["improper output", "downstream injection", "xss", "markdown exfiltration", "html script"],
+      "category": "improper_output",
+      "owasp_ids": ["LLM05"],
+      "atlas_ids": [],
+      "summary": "Output cua model chua HTML, script, markdown image hoac payload parser duoc dua toi sink ma khong encode.",
+      "how_it_works": [
+        "Model duoc yeu cau sinh cu phap renderer se thuc thi (script, hyperlink, markdown image).",
+        "Sink lay URL ngoai hoac chay JavaScript lam ro ri du lieu."
+      ],
+      "detection": "Can renderer/downstream test; hien oracle frontend_sink con inconclusive voi harness HTTP.",
+      "mitigation": "Output encoding theo ngu canh; CSP; allowlist scheme/domain tai sink.",
+      "seed_refs": ["OUTPUT-HANDLING-001", "OUTPUT-HANDLING-003"],
+      "source_refs": ["OWASP-LLM-TOP10-2025"],
+      "tags": ["output", "sink"]
+    },
+    {
+      "id": "TECH-MISINFO",
+      "name": "Misinformation and fabricated policy",
+      "aliases": ["misinformation", "hallucination", "fabricated citation", "bia chinh sach", "false action claim"],
+      "category": "misinformation",
+      "owasp_ids": ["LLM09"],
+      "atlas_ids": [],
+      "summary": "Model bia chinh sach, citation hoac xac nhan side effect da xay ra trong khi audit/DB chung minh nguoc lai.",
+      "how_it_works": [
+        "Cau hoi dan dat khang dinh sai de model xac nhan thay vi phan bac.",
+        "Model tu bao da tao ticket hoac ap dung chinh sach khong ton tai."
+      ],
+      "detection": "So sanh claim voi corpus va mock DB; phat hien false_action_claim khi DB khong co ban ghi.",
+      "mitigation": "Grounding theo RAG provenance; khong xac nhan side effect khi chua co audit event.",
+      "seed_refs": ["MIS-INFO-001", "MIS-INFO-003", "MIS-INFO-004", "APP-COM-001"],
+      "source_refs": ["OWASP-LLM-TOP10-2025"],
+      "tags": ["misinformation", "grounding"]
+    }
+  ]
+}

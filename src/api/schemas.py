@@ -25,6 +25,9 @@ class ChatResponse(BaseModel):
     session_id: str
     reply: str
     model: str
+    provider: str | None = None
+    provider_slot: str | None = None
+    provider_attempts: list[str] = Field(default_factory=list)
     latency_s: float
     total_tokens: int
     canary_leaked: bool = False

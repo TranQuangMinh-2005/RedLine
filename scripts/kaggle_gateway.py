@@ -10,7 +10,6 @@ Importing this file has no side effects.
 from __future__ import annotations
 
 import argparse
-import fcntl
 import json
 import os
 import shutil
@@ -34,7 +33,12 @@ def run(args):
     status_file = runtime / "gateway-status.json"
     lock = (runtime / "gateway.lock").open("w")
     try:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        try:
+            import fcntl
+        except ImportError:
+            fcntl = None
+        if fcntl is not None:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError as exc:
         lock.close()
         raise RuntimeError("A gateway launcher is already running. Stop it first.") from exc

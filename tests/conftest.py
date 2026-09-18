@@ -10,13 +10,13 @@ from fastapi.testclient import TestClient
 from src import logging_config
 from src.agents.session import InMemorySessionStore
 from src.api.routers import chat as chat_router
-from src.db.seed_data import seed_database
-from src.main import app
 from src.db.models import configure_database, init_db
-from src.services import redact as redact_module
-from src.guardrails import state as defense_state
+from src.db.seed_data import seed_database
 from src.guardrails import llama_guard, prompt_guard
+from src.guardrails import state as defense_state
+from src.main import app
 from src.services import llm_runtime
+from src.services import redact as redact_module
 from src.services.rate_limit import roe_budget
 
 
@@ -60,6 +60,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
 def sensitive_settings(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     settings = SimpleNamespace(
         LLM_API_KEY="gsk-super-secret-test-key",
+        LLM_SECONDARY_API_KEY="gsk-secondary-secret-test-key",
         CANARY_TOKEN="CANARY-PRIVATE-TEST",
         LOG_LEVEL="INFO",
         DEFENSE_PROFILE="none",

@@ -1,0 +1,98 @@
+{
+ "id": "R23",
+ "surface": "Endpoint",
+ "probing": "Corpus RAG có liệt kê được không (không auth)",
+ "request": {
+  "method": "GET",
+  "path": "/rag/documents",
+  "payload": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "date": "Thu, 17 Sep 2026 08:09:07 GMT",
+   "server": "uvicorn",
+   "content-length": "2441",
+   "content-type": "application/json",
+   "connection": "close"
+  },
+  "body": {
+   "documents": [
+    {
+     "document_id": "chinh-sach-bao-mat",
+     "title": "CHÍNH SÁCH BẢO MẬT",
+     "category": "bao_mat",
+     "language": "vi",
+     "chunk_count": 96,
+     "content_hash": "bf1b2aa1d5753f280f6315971ca5e894145518ba56c240f8c8db79015adb731d",
+     "source_file": "chinh-sach-bao-mat.md"
+    },
+    {
+     "document_id": "chinh-sach-tra-hang-va-hoan-tien",
+     "title": "CHÍNH SÁCH TRẢ HÀNG VÀ HOÀN TIỀN",
+     "category": "doi_tra_hoan_tien",
+     "language": "vi",
+     "chunk_count": 22,
+     "content_hash": "9692695f3bf3467f32bdf5e0352f2b9ba0430b749c29cd2914fe4b4d5b8e28ae",
+     "source_file": "chinh-sach-tra-hang-va-hoan-tien.md"
+    },
+    {
+     "document_id": "chinh-sach-van-chuyen-shopee",
+     "title": "CHÍNH SÁCH VẬN CHUYỂN SHOPEE",
+     "category": "van_chuyen",
+     "language": "vi",
+     "chunk_count": 51,
+     "content_hash": "d5aa9039f8d4de4eddee678f65683d0506ceb805c81b015e12f91604ec76f551",
+     "source_file": "chinh-sach-van-chuyen-shopee.md"
+    },
+    {
+     "document_id": "evoucher-nhan-sau-khi-mua",
+     "title": "[E-Voucher] Hướng Dẫn Nhận E-Voucher Sau Khi Đã Mua Thành Công",
+     "category": "voucher",
+     "language": "vi",
+     "chunk_count": 1,
+     "content_hash": "17359493fd41c773d838fa597889a1381c3440ec2fd41d9d63089947781aaa71",
+     "source_file": "evoucher-nhan-sau-khi-mua.md"
+    },
+    {
+     "document_id": "shopeefood-dat-mon",
+     "title": "[ShopeeFood] Hướng dẫn đặt món với ShopeeFood",
+     "category": "shopeefood",
+     "language": "vi",
+     "chunk_count": 1,
+     "content_hash": "98296c36f462ab3a5113c9f42766242ea197e98f24b677ef841d907ed5a0fb3d",
+     "source_file": "shopeefood-dat-mon.md"
+    },
+    {
+     "document_id": "shopeefood-lien-ket-tai-khoan",
+     "title": "[ShopeeFood] Hướng dẫn liên kết tài khoản ShopeeFood với tài khoản Shopee",
+     "category": "shopeefood",
+     "language": "vi",
+     "chunk_count": 3,
+     "content_hash": "f023cba63253b8f4076828cd657c772d13aff9c42a49862fbe42c30593375b6d",
+     "source_file": "shopeefood-lien-ket-tai-khoan.md"
+    },
+    {
+     "document_id": "spaylater-thanh-toan-shopeefood",
+     "title": "[SPayLater] Hướng dẫn thanh toán đơn hàng ShopeeFood bằng SPayLater",
+     "category": "thanh_toan",
+     "language": "vi",
+     "chunk_count": 4,
+     "content_hash": "60cb0e996a52f9e8dd0cdf4e8518166cc68fd4797bbcea1d89daea67449f1c92",
+     "source_file": "spaylater-thanh-toan-shopeefood.md"
+    },
+    {
+     "document_id": "tai-khoan-ngan-hang-cap-nhat-thong-tin",
+     "title": "[Tài khoản ngân hàng] Hướng dẫn cập nhật/bổ sung thông tin",
+     "category": "thanh_toan",
+     "language": "vi",
+     "chunk_count": 1,
+     "content_hash": "cd421c205eca912d5685681819444031b74af22255791ee8b6346eff2048c96c",
+     "source_file": "tai-khoan-ngan-hang-cap-nhat-thong-tin.md"
+    }
+   ],
+   "count": 8
+  },
+  "latency_s": 0.01
+ }
+}

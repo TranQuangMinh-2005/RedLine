@@ -74,6 +74,56 @@ DB Postgres nội bộ (`db:5432`, chỉ expose trong mạng compose); 8 tài li
 
 ## 4. Thử nghiệm guardrail — ma trận bypass
 
+### 4.1. Cách triển khai guardrail ở mức kiến trúc
+
+Guardrail được triển khai theo mô hình **defense-in-depth**: không giao toàn bộ trách nhiệm an toàn cho
+system prompt hoặc cho khả năng tự từ chối của model. Một bộ điều phối đặt quanh agent kiểm tra request tại
+nhiều thời điểm khác nhau; mỗi lớp giải quyết một nhóm rủi ro và có thể chặn luồng trước khi hành động nguy
+hiểm xảy ra. Luồng xử lý tổng quát như sau:
+
+```text
+User/session history
+  → Input filter
+  → Prompt Guard
+  → Llama Guard (input)
+  → System prompt + LLM
+  → Tool authorization / RAG filtering
+  → Output filter
+  → Llama Guard (output)
+  → Response + audit evidence
+```
+
+Các lớp chính được triển khai như sau:
+
+| Lớp kiểm soát | Cách hoạt động ở mức high-level | Mục đích |
+|---|---|---|
+| Defense profile và prompt hardening | Mỗi request lấy một profile bất biến (`none`, `basic` hoặc `strict`). Profile quyết định lớp nào được bật và có bổ sung chỉ thị về trust boundary vào system prompt hay không. | Cho phép chạy cùng một target dưới nhiều mức phòng thủ để so sánh công bằng. |
+| Input filter xác định | Kiểm tra toàn bộ các lượt user trong session bằng các luật có thể giải thích, gồm override chỉ thị, yêu cầu lộ prompt/canary, giả mạo role và một số dạng mã hóa. Nếu khớp luật, request dừng trước LLM. | Chặn sớm các mẫu injection đã biết, không tốn token và tạo verdict tái lập được. |
+| Prompt Guard | Model phân loại riêng chấm điểm prompt injection/jailbreak trên tối đa 10 lượt user gần nhất. Điểm vượt ngưỡng sẽ chặn request trước LLM. | Bổ sung nhận diện ngữ nghĩa cho các biến thể không khớp regex. |
+| Llama Guard | Chạy độc lập với defense profile. Có thể phân loại cả input và output theo nhóm nội dung không an toàn; output bị đánh dấu unsafe sẽ được thay bằng câu trả lời an toàn cố định. | Kiểm duyệt nội dung rộng hơn prompt injection và tạo thêm một lớp kiểm tra sau model. |
+| Tool authorization và action policy | LLM chỉ **đề xuất** tool call; code kiểm tra lại trước khi thực thi. Ở profile được bảo vệ, `customer_id` phải trùng actor cố định của scenario. Profile `strict` còn giới hạn số lần gọi từng tool, chỉ cho phép tool trong allowlist, yêu cầu ý định tạo ticket rõ ràng và dùng request ID do server quản lý để chống lặp side effect. | Không dùng quyết định của LLM làm cơ chế phân quyền; ngăn truy cập chéo khách hàng và excessive agency. |
+| RAG trust boundary | Kết quả retrieval được gắn nhãn dữ liệu không tin cậy. `strict` cách ly chunk có dấu hiệu chứa chỉ thị độc; nếu Prompt Guard được bật, từng chunk còn được chấm điểm trước khi đưa trở lại context của agent. | Giảm indirect prompt injection từ tài liệu hoặc dữ liệu được truy xuất. |
+| Output filter | Trước khi trả response, hệ thống tìm canary dạng thô/mã hóa, dấu hiệu system prompt, dữ liệu mock của khách hàng khác và nội dung chủ động như HTML/image URL. Khi phát hiện, nội dung gốc không được chuyển tới client. | Chặn rò rỉ còn sót lại sau khi LLM đã sinh câu trả lời. |
+
+Ba profile được dùng để tạo các mức kiểm soát có chủ đích. `none` là baseline yếu: không hardening prompt,
+không authorization ở tầng guardrail và không lọc input/output; nhờ đó red team có thể đo hành vi tự nhiên
+của model. `basic` bật input filter, prompt hardening, canary check và ràng buộc tool với khách hàng cố định.
+`strict` kế thừa các lớp trên rồi bổ sung output filter, cách ly RAG và action policy. Prompt Guard và Llama
+Guard không bị gắn cứng vào ba profile mà là hai chốt độc lập, giúp đánh giá riêng hiệu quả và chi phí của
+từng model-guard.
+
+Về semantics, một request bị chặn ở input sẽ không tới LLM và có `total_tokens=0`; một tool call bị chặn sẽ
+không được dispatch xuống DB/RAG; còn một output bị chặn xảy ra sau khi LLM đã chạy nhưng response gốc được
+thay thế trước khi gửi cho người dùng. Với guard model bên ngoài, `fail_mode=closed` ưu tiên an toàn bằng cách
+chặn khi dịch vụ guard không khả dụng, trong khi `fail_mode=open` cho phép tiếp tục nhưng vẫn ghi nhận lỗi.
+Cấu hình này được đặt rõ ràng để benchmark không nhầm lỗi hạ tầng với khả năng phát hiện tấn công.
+
+Mỗi chốt ghi `request_id`, stage, verdict, rule/category, độ trễ và `guardrail_actions` vào audit log. Response
+cũng mang `defense_profile` và `target_config_hash`; khi bật `include_trace` trong sandbox, trace cho biết chốt
+nào đã chạy, chốt nào bị bỏ qua và prompt có tới LLM hay không. Nhờ đó báo cáo phân biệt được ba trường hợp:
+**guardrail code chặn**, **model tự từ chối**, và **attack thực sự thành công**, thay vì suy luận chỉ từ câu trả
+lời cuối cùng.
+
 **Phương pháp:** 16 prompt tấn công có nhãn + 4 prompt hợp lệ, chạy qua `POST /chat?include_trace=true`
 trên 5 cấu hình. "Chặn" = guardrail code thay câu trả lời; các trace khác cho biết model tự từ chối hay đi qua.
 Script tái lập: [`evidence/bypass_matrix.py`](evidence/bypass_matrix.py);

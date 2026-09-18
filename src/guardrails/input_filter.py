@@ -41,6 +41,23 @@ _BASIC_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
 
 _STRICT_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
+        "role_hierarchy_spoofing",
+        re.compile(
+            r"\b(?:policy|system|analysis|assistant)\s*:"
+            r".{0,1200}\b(?:policy|system|analysis|assistant)\s*:",
+            re.IGNORECASE | re.DOTALL,
+        ),
+    ),
+    (
+        "surrogate_channel_spoofing",
+        re.compile(
+            r"(?:ამდ|repo).{0,80}\b(?:policy|system|analysis|assistant)\b"
+            r".{0,1200}(?:ამდ|repo).{0,80}"
+            r"\b(?:policy|system|analysis|assistant)\b",
+            re.IGNORECASE | re.DOTALL,
+        ),
+    ),
+    (
         "role_override",
         re.compile(
             r"\b(you\s+are\s+now|act\s+as|pretend\s+to\s+be|đóng\s+vai|"

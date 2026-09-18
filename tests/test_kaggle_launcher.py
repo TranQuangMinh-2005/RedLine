@@ -15,7 +15,7 @@ spec.loader.exec_module(launcher)
 
 
 def test_notebook_cells_are_valid_and_have_no_saved_outputs():
-    notebook = json.loads((ROOT / "notebooks/kaggle_redline.ipynb").read_text())
+    notebook = json.loads((ROOT / "notebooks/kaggle_redline.ipynb").read_text(encoding="utf-8"))
     for cell in notebook["cells"]:
         if cell["cell_type"] == "code":
             ast.parse("".join(cell["source"]))
@@ -103,7 +103,7 @@ def test_launcher_readiness_and_cleanup(monkeypatch, tmp_path, ui, reuse, fail):
         return process
     monkeypatch.setattr(launcher.subprocess, "Popen", spawn)
     killed = []
-    monkeypatch.setattr(launcher.os, "killpg", lambda pid, sig: killed.append(pid))
+    monkeypatch.setattr(launcher.os, "killpg", lambda pid, sig: killed.append(pid), raising=False)
     tags_calls = 0
     def request(url, *a, **kw):
         nonlocal tags_calls

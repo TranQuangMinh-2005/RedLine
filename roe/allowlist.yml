@@ -1,6 +1,3 @@
-# Chỉ tấn công target trong sandbox. Mọi mục tiêu khác đều NGOÀI PHẠM VI.
-# Rubric 4.2: gọi ra ngoài allowlist => toàn bộ hạng mục 4 = 0 điểm.
-
 allowed_targets:
   - host: target
     port: 8000

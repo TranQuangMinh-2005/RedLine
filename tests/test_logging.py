@@ -4,6 +4,8 @@ import json
 import logging
 from types import SimpleNamespace
 
+import pytest
+
 from src import logging_config
 from src.services import redact as redact_module
 
@@ -13,13 +15,16 @@ def test_redact_removes_secrets_and_nested_mock_pii(sensitive_settings: SimpleNa
         "authorization": "Bearer should-never-appear",
         "nested": {
             "api_key": sensitive_settings.LLM_API_KEY,
+            "llm_secondary_api_key": sensitive_settings.LLM_SECONDARY_API_KEY,
             "canary_token": sensitive_settings.CANARY_TOKEN,
             "email": "customer01@example.test",
             "phone": "0900000001",
             "address": "Mock address 01",
         },
         "free_text": (
-            f"key={sensitive_settings.LLM_API_KEY} canary={sensitive_settings.CANARY_TOKEN} "
+            f"key={sensitive_settings.LLM_API_KEY} "
+            f"secondary={sensitive_settings.LLM_SECONDARY_API_KEY} "
+            f"canary={sensitive_settings.CANARY_TOKEN} "
             "email=customer01@example.test phone=0900000001 Bearer abc.def.ghi"
         ),
     }
@@ -30,6 +35,7 @@ def test_redact_removes_secrets_and_nested_mock_pii(sensitive_settings: SimpleNa
     for forbidden in (
         "should-never-appear",
         sensitive_settings.LLM_API_KEY,
+        sensitive_settings.LLM_SECONDARY_API_KEY,
         sensitive_settings.CANARY_TOKEN,
         "customer01@example.test",
         "0900000001",
@@ -96,6 +102,39 @@ def test_audit_event_has_fields_needed_to_correlate_a_run(
     assert event["target_config_hash"] == "config123"
     assert event["document_ids"] == ["shipping-policy"]
     assert "session_id" not in event
+
+
+def test_audit_log_path_writes_jsonl_for_the_harness(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    log_path = tmp_path / "audit.jsonl"
+    settings = SimpleNamespace(
+        LOG_LEVEL="INFO",
+        AUDIT_LOG_PATH=str(log_path),
+        DEFENSE_PROFILE="none",
+        target_config_hash="cfg",
+        target_config_hash_for=lambda _profile: "cfg",
+        LLM_API_KEY="",
+        LLM_SECONDARY_API_KEY="",
+        CANARY_TOKEN="CANARY-PRIVATE-TEST",
+    )
+    monkeypatch.setattr(logging_config, "get_settings", lambda: settings)
+    monkeypatch.setattr(redact_module, "get_settings", lambda: settings)
+
+    logger = logging_config.configure_logging()
+    try:
+        logging_config.audit_event("request_received", request_id="REQ-1", session_id="S1")
+    finally:
+        for handler in list(logger.handlers):
+            if isinstance(handler, logging.FileHandler):
+                logger.removeHandler(handler)
+                handler.close()
+
+    lines = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+    assert lines[0]["event"] == "request_received"
+    assert lines[0]["request_id"] == "REQ-1"
+    assert lines[0]["session_id_hash"] == logging_config.session_hash("S1")
 
 
 def test_request_context_correlates_nested_agent_events(

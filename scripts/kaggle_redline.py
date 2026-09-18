@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
 import secrets
 import shutil
 import signal
@@ -18,6 +17,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -118,10 +118,14 @@ def run(args):
     status_file = runtime / "status.json"
     lock_file = runtime / "launcher.lock"
     # Hold a process lock for the whole run; stale files do not block subsequent runs.
-    import fcntl
     lock = lock_file.open("w")
     try:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        try:
+            import fcntl
+        except ImportError:
+            fcntl = None
+        if fcntl is not None:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except BlockingIOError as exc:
         lock.close()
         raise RuntimeError("A launcher is already running. Stop it before starting again.") from exc
@@ -173,7 +177,7 @@ def run(args):
             "LLM_BASE_URL": "http://127.0.0.1:11434/v1",
             "LLM_MODEL": args.model,
             "LLM_API_KEY": "ollama",
-            "DATABASE_URL": f"sqlite:///{runtime / 'redline.db'}",
+            "DATABASE_URL": f"sqlite:///{(runtime / 'redline.db').as_posix()}",
             "DEFENSE_PROFILE": args.defense_profile,
             "SCENARIO_CUSTOMER_ID": args.customer_id,
             "ROE_KILL_SWITCH": "false",

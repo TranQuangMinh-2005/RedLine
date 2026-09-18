@@ -1,5 +1,6 @@
 # Secrets
 .env
+.env.*.bak
 *.key
 *.pem
 
@@ -51,3 +52,5 @@ next-env.d.ts
 .preview/
 .dsh-vision-router/
 .backup-w1/
+.tmp/
+.pytest-tmp-*/

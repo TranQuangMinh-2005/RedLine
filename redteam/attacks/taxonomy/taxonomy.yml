@@ -1,35 +1,71 @@
-# Taxonomy anh xa OWASP LLM Top 10 + MITRE ATLAS
-# Pham vi: LLM01, LLM02, LLM05, LLM06, LLM07, LLM08, LLM09, LLM10
-# Ngoai pham vi: LLM03 (Supply Chain), LLM04 (Data & Model Poisoning)
+# Taxonomy cho thu vien seed Week 2.
+# OWASP scope: LLM01, LLM02, LLM05, LLM06, LLM07, LLM08, LLM09, LLM10.
+# LLM03 va LLM04 nam ngoai pham vi prompt-based evaluation cua target co dinh.
 
+version: "1.0"
 categories:
   prompt_injection.direct:
-    owasp: LLM01
-    atlas: AML.T0051
+    description: User input tries to override instructions or security boundaries.
+    owasp_ids: [LLM01]
+    atlas_ids: [AML.T0051]
+    target_assets: [system_prompt, authorization_policy]
+
   prompt_injection.indirect:
-    owasp: LLM01
-    atlas: AML.T0051
+    description: Untrusted RAG content tries to control the agent after retrieval.
+    owasp_ids: [LLM01, LLM08]
+    atlas_ids: [AML.T0051.001]
+    target_assets: [rag_corpus, rag_trust_boundary, tool_policy]
+
   jailbreak.roleplay:
-    owasp: LLM01
-    atlas: AML.T0054
+    description: Framing or role-play tries to bypass the intended assistant role.
+    owasp_ids: [LLM01]
+    atlas_ids: [AML.T0054]
+    target_assets: [system_prompt, input_guardrail]
+
   system_prompt_leak:
-    owasp: LLM07
-    atlas: AML.T0056
+    description: Attempts to reveal hidden instructions, secrets, or canaries.
+    owasp_ids: [LLM07]
+    atlas_ids: [AML.T0056]
+    target_assets: [system_prompt, canary]
+
   sensitive_data_leak:
-    owasp: LLM02
-    atlas: AML.T0057
+    description: Attempts to disclose mock PII or another customer's records.
+    owasp_ids: [LLM02]
+    atlas_ids: [AML.T0057]
+    target_assets: [customer_db, session_state, audit_log]
+
   tool_abuse:
-    owasp: LLM06
-    atlas: AML.T0053
+    description: Attempts unauthorized, ambiguous, repeated, or over-privileged tool actions.
+    owasp_ids: [LLM06]
+    atlas_ids: []
+    target_assets: [tool_policy, customer_db, side_effect_store]
+
   obfuscation:
-    owasp: LLM01
-    atlas: AML.T0051
+    description: Encodings and text transformations try to evade deterministic filters.
+    owasp_ids: [LLM01]
+    atlas_ids: [AML.T0051]
+    target_assets: [input_guardrail, output_guardrail]
+
   multi_turn:
-    owasp: LLM01
-    atlas: AML.T0054
+    description: Conversation state is used to build trust, smuggle instructions, or escalate scope.
+    owasp_ids: [LLM01, LLM06]
+    atlas_ids: [AML.T0054]
+    target_assets: [session_state, authorization_policy, tool_policy]
+
   improper_output:
-    owasp: LLM09
-    atlas: AML.T0058
+    description: Model output reaches a downstream sink without safe validation or encoding.
+    owasp_ids: [LLM05]
+    atlas_ids: []
+    target_assets: [output_guardrail, downstream_consumer]
+
+  misinformation:
+    description: Agent invents unsupported policy, order, ticket, or source claims.
+    owasp_ids: [LLM09]
+    atlas_ids: []
+    target_assets: [response_integrity, rag_provenance]
+
   unbounded_consumption:
-    owasp: LLM10
-    atlas: AML.T0034
+    description: Prompts try to cause excessive turns, output, retrieval, or tool calls.
+    owasp_ids: [LLM10]
+    atlas_ids: []
+    target_assets: [availability, rate_limit, token_budget]
